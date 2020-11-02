@@ -1,0 +1,895 @@
+<!-- Child Lightning Component for Create New Row Instance-->
+
+<aura:component controller="fetchPicklistOptsController" >    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!-- Aura Attribute for store single PettyCash[Custom Object] Instance
+         And Store Index of Particular Instance --> 
+    <aura:attribute name="BoardingLodgingInstance" type="Boarding_Lodging__c"/>
+    <aura:attribute name="rowIndex" type="String"/>
+    <aura:attribute name="fileName" type="String" default="No File Selected.." />
+    <aura:attribute name="text" type="String" default="Hello Brother" />
+    <aura:attribute name="attachmentTracker" type="List" />
+   <aura:attribute name="lstActvityCodeAndTaskIds" type="List" />
+    
+    <!-- Register 2 Lightning Event for handle add or Delete rows on Parent Component  --> 
+    <aura:registerEvent name="DeleteRowEvt" type="c:DeleteRowEvt"/> 
+    <aura:registerEvent name="AddRowEvt" type="c:AddNewRowEvt"/> 
+    <aura:registerEvent name="AddNewFilesEvt" type="c:AddNewFilesEvt" />
+    <aura:registerEvent name="AddtaskId" type="c:AddtaskId" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    
+    <!-- Table Row -->   
+    <aura:attribute name="recordId" type="String" />
+    <tr class="slds-text-title_caps">
+        <td> 
+            {!v.rowIndex + 1}
+        </td>
+        <td>
+            <ui:inputSelect aura:id="StayOption" class="slds-select" value="{!v.BoardingLodgingInstance.Stay_Option__c}" change="{!c.ChangePickVal}"  />
+        </td>
+        <td>
+            <ui:inputSelect aura:Id="Boardtask" class="slds-select" change="{!c.selectTaskActivity}"/>
+        </td>
+        <td>
+            <ui:inputSelect aura:id="PlaceJourney" disabled="true" class="slds-select"  value="{!v.BoardingLodgingInstance.Place_Journey__c}" change="{!c.onPicklistChange}"/>
+        </td>
+        <td>
+            <ui:inputText aura:id="corres" class="slds-select" value="{!v.BoardingLodgingInstance.Correspondence_City__c}" maxlength = "255"  />
+        </td>
+        <td>
+            <ui:inputDateTime aura:id="from" class="cols" disabled="false" value="{!v.BoardingLodgingInstance.From__c}" displayDatePicker="true" change="{!c.DateChoose}" format="MM/dd/yyyy"/>
+        </td>
+        <td>
+            <ui:inputDateTime aura:id="to" class="cols" disabled="false" value="{!v.BoardingLodgingInstance.To__c}" displayDatePicker="true" change="{!c.DateChoose}" format="MM/dd/yyyy"/>
+        </td>
+        <td>
+            <ui:inputCurrency aura:id="idTotalOwnStayAmt" disabled="true" class="cols" value="{!v.BoardingLodgingInstance.Total_Own_Stay_Amount__c}"/>
+        </td>
+        <td>
+            <ui:inputCurrency aura:id="totalAllownce" disabled="false" class="slds-select" value="{!v.BoardingLodgingInstance.Total_Allowance__c}"/>
+        </td>
+        <td>
+            <ui:inputCurrency aura:id="DA" class="slds-input" disabled="true" value="{!v.BoardingLodgingInstance.Daily_Allowance__c}"  />
+        </td>
+        <td>
+            <ui:inputCurrency aura:id="BL" class="slds-input" disabled="true" value="{!v.BoardingLodgingInstance.Amount_for_boarding_and_lodging__c}"  />
+        </td>
+        <td>
+            <ui:inputCurrency aura:id="ActualAMt" class="slds-input" value="{!v.BoardingLodgingInstance.Actual_Amount_for_boarding_and_lodging__c}" placeholder="Please Enter Amount..."  />
+        </td>
+        <td>
+            <ui:inputCurrency aura:id="OwnStay" class="slds-input" value="{!v.BoardingLodgingInstance.Own_Stay_Amount__c}" placeholder="Own Stay Amount..."  />
+        </td>
+        <td>
+            <lightning:input aura:id="fileId" onchange="{!c.handleFilesChange}" type="file" name="file"  multiple="false"/>
+            <div class="slds-text-body_small slds-text-color_error">{!v.fileName} </div>
+        </td>
+        <td>
+            <!-- conditionally Display Add or Delete Icons
+                 if rowIndex is 0 then show Add New Row Icon else show delete Icon
+             --> 
+            <aura:if isTrue="{!v.rowIndex == 0}">
+                <a onclick="{!c.AddNewRow}">
+                    <lightning:icon iconName="utility:add" class="slds-icon slds-icon_small" size="small" alternativeText="add"/>
+                    <span class="slds-assistive-text">Add Icon</span>
+                </a>    
+                <aura:set attribute="else">
+                     <a onclick="{!c.AddNewRow}">
+                    <lightning:icon iconName="utility:add" class="slds-icon slds-icon_small" size="small" alternativeText="add"/>
+                    <span class="slds-assistive-text">Add Icon</span>
+                </a>  
+                    
+                    <a onclick="{!c.removeRow}">
+                        <lightning:icon variant="error" iconName="utility:delete" class="slds-icon slds-icon_small" size="small" alternativeText="icon"/>
+                        <span class="slds-assistive-text">Delete Icon</span>
+                    </a>
+                </aura:set> 
+            </aura:if>
+        </td>
+    </tr>
+</aura:component>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+({
+    doInit: function(component, event, helper) 
+    {
+        /*** attachment Index Tracking ****/
+        let rowIndex = component.get("v.rowIndex");
+        console.log('rowIndex  : '+rowIndex);
+        let attachmentTracker = component.get("v.attachmentTracker");
+        console.log('attachmentTracker  '+JSON.stringify(attachmentTracker));
+        attachmentTracker[rowIndex].index = rowIndex;
+        component.set("v.attachmentTracker",attachmentTracker);
+        
+        helper.fetchPickListVal(component, 'Place_Journey__c', 'PlaceJourney');
+        helper.fetchPickListVal(component, 'Stay_Option__c', 'StayOption');
+        helper.getAllTaskActivityCode(component,event,helper);
+        
+        component.find('totalAllownce').set('v.disabled', true);
+        component.find('DA').set("v.disabled",true);
+        component.find('BL').set("v.disabled",true);
+        component.find('ActualAMt').set("v.disabled",true);
+        component.find('OwnStay').set("v.disabled",true);
+        component.find('Boardtask').set("v.disabled",true);
+        
+        component.find('PlaceJourney').set("v.value",'');
+        component.find('ActualAMt').set("v.value",0);
+        component.find('OwnStay').set("v.value",0);
+        component.find('BL').set("v.value",0);
+        component.find('DA').set("v.value",0);
+        component.find('corres').set("v.disabled",true);
+        console.log('---- controller recordId: ' + component.get("v.recordId"));
+        
+    },
+    AddNewRow : function(component, event, helper){
+        // fire the AddNewRowEvt Lightning Event 
+        component.getEvent("AddRowEvt").fire();  
+    },
+    
+    removeRow : function(component, event, helper){
+        console.log('Working');
+        // fire the DeleteRowEvt Lightning Event and pass the deleted Row Index to Event parameter/attribute
+        console.log('Value of RowIndex  While Deletion : '+component.get("v.rowIndex"));
+        component.getEvent("DeleteRowEvt").setParams({"indexVar" : component.get("v.rowIndex") }).fire();
+    }, 
+    
+    handleFilesChange: function(component, event, helper)
+    {
+        var fileName = 'No File Selected..';
+        var  IndexNumber = component.get("v.rowIndex");
+        if (event.getSource().get("v.files").length > 0) 
+        {
+            fileName = event.getSource().get("v.files")[0]['name'];
+            console.log(fileName);
+            /*** Attachment Tracking ***/
+            let attachmentTracker = component.get("v.attachmentTracker");
+            attachmentTracker[IndexNumber].attachmentName = fileName;
+            component.set("v.attachmentTracker",attachmentTracker);
+            
+        }
+        component.set("v.fileName", fileName);
+        var fileInput = component.find("fileId").get("v.files"); 
+        var file = fileInput[0];
+        var self = this;
+        if (file.size > 4500000) {
+            // component.set("v.showLoadingSpinner", false);
+            var toastEvent = $A.get("e.force:showToast");
+            toastEvent.setParams({
+                type: 'alert',
+                mode : 'sticky',
+                "message": 'File size cannot exceed 4500000 bytes  & File size is'+ file.size+ 'bytes',
+            });
+            toastEvent.fire();
+            
+            component.set("v.fileName", 'Please choose another file');
+            return;
+        }
+        component.getEvent("AddNewFilesEvt").setParams({ 
+            "currentfileName" : file,
+            "IndexNumber" : IndexNumber
+        }).fire();    
+    },
+    onPicklistChange: function(component, event, helper) 
+    {
+        var pickValue = event.getSource().get('v.value');
+        if(pickValue === 'Others'){
+            console.log('Done');
+            component.find('corres').set("v.disabled",false);
+            component.find('corres').set("v.placeholder",'Please Enter City Name...');
+            component.find('corres').set("v.required",true);
+        }else{
+            component.find('corres').set("v.disabled",true);
+            component.find('corres').set("v.placeholder",'');
+        }
+        
+        var action = component.get("c.getCityExpense");
+        action.setParams({
+            'cityName' : pickValue
+        });
+        action.setCallback(this,function(response){
+            var status = response.getState();
+            console.log('----------'+status);
+            if(status === 'SUCCESS'){
+                var Amount = [];
+                var returnData = response.getReturnValue();
+                console.log('============'+returnData);
+                Amount = returnData;
+                console.log('============'+Amount[0]);
+                if(component.find('StayOption').get('v.value') == 'Own Stay')
+                {
+                    component.find("OwnStay").set("v.value", Amount[2]);
+                }
+                if(component.find('StayOption').get('v.value') == 'Stay'){
+                    component.find("BL").set("v.value", Amount[0]);
+                    component.find("DA").set("v.value", Amount[1]);
+                }
+            }
+        });
+        $A.enqueueAction(action);
+    },
+    
+    ChangePickVal : function(component, event, helper)
+    {
+        component.find('PlaceJourney').set("v.disabled",false);
+        var pickValue = event.getSource().get('v.value'); 
+        if(pickValue == ''){
+            component.find('Boardtask').set("v.disabled",true);   	// Commented By Ankit
+            
+            // component.find('Boardtask').set("v.disabled",false);
+            component.find('PlaceJourney').set("v.disabled",true);
+            component.find('DA').set("v.disabled",true);
+            component.find('BL').set("v.disabled",true);
+            component.find('ActualAMt').set("v.disabled",true);
+            component.find('OwnStay').set("v.disabled",true);
+            
+            component.find('Boardtask').set("v.value",'---None---');
+            component.find('PlaceJourney').set("v.value",'');
+            component.find('ActualAMt').set("v.value",0);
+            component.find('OwnStay').set("v.value",0);
+            component.find('BL').set("v.value",0);
+            component.find('DA').set("v.value",0);
+            component.find('idTotalOwnStayAmt').set('v.value', '');
+        }
+        console.log('---------'+pickValue);
+        if(pickValue == 'Own Stay'){
+            component.find('Boardtask').set("v.disabled",false);
+            component.find('DA').set("v.disabled",true);
+            component.find('BL').set("v.disabled",true);
+            component.find('ActualAMt').set("v.disabled",true);
+            component.find('OwnStay').set("v.disabled",true);
+            
+            component.find('PlaceJourney').set("v.value",'');
+            component.find('ActualAMt').set("v.value",0);
+            component.find('OwnStay').set("v.value",null);
+            component.find('BL').set("v.value",0);
+            component.find('DA').set("v.value",0);
+            component.find('totalAllownce').set("v.value", '');
+            component.find('from').set("v.value", null);
+            component.find('to').set("v.value", null);
+            component.find('fileId').set("v.value", '');
+            component.set('v.fileName', 'No File Selected.');
+        }
+        if(pickValue == 'Stay')
+        {
+            component.find('Boardtask').set("v.disabled",false);
+            component.find('ActualAMt').set("v.disabled",false); 
+            component.find('OwnStay').set("v.disabled",true); 
+            component.find('OwnStay').set("v.value",0);
+            component.find('ActualAMt').set("v.value",null);
+            component.find('PlaceJourney').set("v.value",'');
+            component.find('from').set("v.value", null);
+            component.find('to').set("v.value", null);
+            component.find('idTotalOwnStayAmt').set('v.value', '');
+        }
+    },
+    
+    selectTaskActivity : function(component,event,helper)
+    {
+        var gettaskid = event.getSource().get("v.value");
+        helper.selectTaskActivity(component,event,helper);
+        //component.getEvent("AddtaskId").setParams({"indexVar" : component.get("v.rowIndex") , "taskId" : gettaskid }).fire();
+    },	
+    
+    DateChoose : function(component,event,helper)
+    {
+        var dtFrom = component.find("from").get("v.value");
+        console.log('---- dtFrom: ' + dtFrom);
+        var dtTo = component.find("to").get("v.value");
+        console.log('---- dtTo: ' + dtTo);
+        
+        if(dtFrom != null && dtFrom != '' && typeof(dtFrom) !== "undefined" && dtTo != null && dtTo != '' && typeof(dtTo) !== "undefined")
+        {
+            var dtF = new Date(dtFrom);
+            var dtT = new Date(dtTo);
+            console.log('---- dtF.getTime(): ' + dtF.getTime());
+            console.log('---- dtT.getTime(): ' + dtT.getTime());
+            
+            var diff = (dtT.getTime() - dtF.getTime())/(1000 * 60 * 60 * 24);
+            console.log('---- diff: ' + diff);
+            
+            if(diff < 0)
+            {
+                //alert('You have entered the wrong date');
+                var toastEvent = $A.get('e.force:showToast');
+                toastEvent.setParams({
+                    "message": "You have entered wrong dates.",
+                    "type": "error"
+                });
+                toastEvent.fire();
+                
+                component.find("to").set("v.value", "");
+                component.find("totalAllownce").set("v.value", "");
+            }
+            else
+            {
+                //For calculating the No. of Days between From & To dates.
+                //var diff1 = (dtT.getTime() - dtF.getTime())/(1000 * 60);
+            	//console.log('---- 1 diff1: ' + diff1);
+                //diff1 = diff1/(24*60);
+                //console.log('---- 2 diff1: ' + diff1);
+                //component.set('v.BoardingLodgingInstance.No_of_Days__c', diff1);
+            }
+            
+            var dailyAllowance = 0;
+            
+            if(component.find('StayOption').get('v.value') == 'Own Stay')
+            	dailyAllowance = component.find("OwnStay").get("v.value");
+            else if(component.find('StayOption').get('v.value') == 'Stay')
+                dailyAllowance = component.find("DA").get("v.value");
+            
+            console.log('----- dailyAllowance: ' + dailyAllowance);
+            var action = component.get("c.getDateUpdateval");
+            action.setParams({
+                "fromDateTime" : dtFrom,
+                "toDateTime" : dtTo,
+                "policyExpense": dailyAllowance
+            });
+            
+            action.setCallback(this,function(response){
+                var state = response.getState();
+                if(state === "SUCCESS")
+                {
+                    var returnData = response.getReturnValue();
+                    console.log('---- DateChoose returnData: ' + returnData);
+                    if(component.find('StayOption').get('v.value') == 'Own Stay')
+                        component.find('idTotalOwnStayAmt').set("v.value", returnData);
+                    else if(component.find('StayOption').get('v.value') == 'Stay')
+                        component.find('totalAllownce').set("v.value", returnData);
+                    
+                    console.log();
+                }
+                else if(state === "INCOMPLETE")
+                {
+                    console.log("--- The DateChoose is incomplete.");
+                }
+                    else if(state === "ERROR")
+                        console.log("--- The DateChoose is error: " + response.getError()[0].message);
+            });
+            $A.enqueueAction(action);
+        }
+    }
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+({
+    fetchPickListVal: function(component, fieldName, elementId) 
+    {
+        var action = component.get("c.getselectOptions");
+        action.setParams({
+            "objObject": component.get("v.BoardingLodgingInstance"),
+            "fld": fieldName
+        });
+        var opts = [];
+        action.setCallback(this, function(response) {
+            if (response.getState() == "SUCCESS") {
+                var allValues = response.getReturnValue();
+                
+                if (allValues != undefined && allValues.length > 0) {
+                    opts.push({
+                        class: "optionClass",
+                        label: "--- None ---",
+                        value: ""
+                    });
+                }
+                for (var i = 0; i < allValues.length; i++) {
+                    opts.push({
+                        class: "optionClass",
+                        label: allValues[i],
+                        value: allValues[i]
+                    });
+                }
+                component.find(elementId).set("v.options", opts);
+            }
+        });
+        $A.enqueueAction(action);
+    },
+    
+    getAllTaskActivityCode : function(component,event,helper)
+    {
+        console.log('--- Helper recordId: ' + component.get("v.recordId"));
+        var action = component.get("c.getAllActivityCodes");
+        action.setParams({
+            "tourId" : component.get("v.recordId")
+        });
+        action.setCallback(this,function(response){
+            var opts = [];
+            var status = response.getState();
+            if(status === 'SUCCESS')
+            {
+                var returnVal = response.getReturnValue();
+                component.set("v.lstActvityCodeAndTaskIds",returnVal);
+                console.log('555  ******   list Of ACtivity Codes-----------'+JSON.stringify(returnVal));
+                
+                if(returnVal.length > 0)
+                {
+                    opts.push(
+                        { "class": "optionClass", "label": "None", "value": "","text" : "" }
+                    );
+                    for(var i = 0 ; i < returnVal.length ; i++){
+                        console.log('-----------'+JSON.stringify(returnVal[i].Name));
+                        opts.push(
+                            { "class": "optionClass", "label": returnVal[i].Activity_Code_Project__c, "value": returnVal[i].Name, "text" :returnVal[i].Name }
+                        );
+                    }
+                    component.find('Boardtask').set("v.options", opts);
+                }
+                // helper.selectTaskActivity(component,event,helper);
+            }
+        });
+        $A.enqueueAction(action);    
+    },
+    
+    selectTaskActivity : function(component,event,helper)
+    {
+        let selectedTaskId = component.find("Boardtask").get("v.value");
+        console.log('555  ****** selectedTaskId  '+ selectedTaskId );
+        
+        if( selectedTaskId == '' || selectedTaskId == null || typeof(selectedTaskId) == undefined )
+        {
+            var nullActivity = '' ;
+            component.find("Boardtask").set('v.value', '');
+            
+            var toastEvent = $A.get('e.force:showToast');
+            if(toastEvent)
+            {
+                toastEvent.setParams({
+                    "type" : "error",
+                    "message" : " Activity Code cannot be Null, please choose a valid Activity Code !"
+                })
+                toastEvent.fire();
+            }
+            else
+                alert('Activity Code cannot be Null, please choose a valid Activity Code');
+            
+            var BoardingLodgingInstance = component.get('v.BoardingLodgingInstance');
+            BoardingLodgingInstance.Activity_Code_Project__c = selectedTaskId;
+            component.set('v.BoardingLodgingInstance', BoardingLodgingInstance);
+        }
+        
+        else {
+            let lstActvityCodeAndTaskIds = component.get("v.lstActvityCodeAndTaskIds");
+            console.log('555  ******  lstActvityCodeAndTaskIds  '+ JSON.stringify(lstActvityCodeAndTaskIds) );
+            
+            let activityCode;
+            if(typeof(lstActvityCodeAndTaskIds) != 'undefined' && lstActvityCodeAndTaskIds.length > 0)
+            {
+                activityCode =   lstActvityCodeAndTaskIds.filter((eachRecord)=>{
+                    // if(eachRecord.Id == selectedTaskId)     commented By Ankit
+                    if(eachRecord.Name == selectedTaskId)
+                    return eachRecord;
+                })
+            }
+            console.log('activityCode[0]  '+JSON.stringify(activityCode));
+            
+            
+            if(activityCode == null || activityCode == '--None--' ||activityCode == '' )
+            {
+                console.log('*****  555 Debug Inside If  activityCode =  '+ JSON.stringify(activityCode));
+                
+                var toastEvent = $A.get('e.force:showToast');
+                if(toastEvent)
+                {
+                    toastEvent.setParams({
+                        "type" : "error",
+                        "message" : " Activity Code cannot be Null, please choose a valid Activity Code !"
+                    })
+                    toastEvent.fire();
+                }
+                else
+                {
+                    alert('Activity Code cannot be Null, please choose a valid Activity Code');
+                }
+            }
+            else{
+                let BoardingLodgingInstance = component.get('v.BoardingLodgingInstance');
+                BoardingLodgingInstance.Activity_Code_Project__c = activityCode[0].Id ; 
+                component.set("v.BoardingLodgingInstance",BoardingLodgingInstance); 
+            }
+        }
+    }
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.THIS .tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: white;
+  color: black;
+  text-align: center;
+  /*border-radius: 16px;*/
+  padding: 20px 20;
+
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+}
+
+.THIS .tooltip:hover .tooltiptext {
+  visibility: visible;
+}
+
+.THIS .slds-medium-show {
+    display: NONE;
+}
+
+.THIS .row:after {
+  content: "";
+  display: table;
+  clear: both;
+    width : 10px;
+}
+
+.THIS .column {
+  float: left;
+  width: 80%;
+  padding: 10px;
+  height: 20px; /* Should be removed. Only for demonstration */
+}
+
+.THIS .columnfile {
+  float: left;
+  width: 20%;
+  padding: 10px;
+  height: 300px; /* Should be removed. Only for demonstration */
+}
+
+.THIS .col {
+   float: right;
+  width: 25%;
+  padding: 10px;
+  height: 10px;
+}
+
+.THIS .cols {
+   float: right;
+  width: 25%;
+  padding: 10px;
+  height: 20px;
+}
+
+.THIS .uiInput--input .input, .THIS .uiInput--input.input {
+    width: 125px !important;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Description : This class is controller of LLF_Boarding&LodgingChild component*/
+
+public class fetchPicklistOptsController
+{
+    /* It is used to dynamically obtain the values of picklist of a field */
+    @AuraEnabled
+    public static List < String > getselectOptions(sObject objObject, string fld)
+    {
+        List < String > allOpts = new list < String > ();
+        Schema.sObjectType objType = objObject.getSObjectType();
+        System.debug('-------------'+objType);
+        System.debug('-------------'+fld);
+        
+        // Describe the SObject using its object type.
+        Schema.DescribeSObjectResult objDescribe = objType.getDescribe();
+        System.debug('-------------'+objDescribe);
+        
+        // Get a map of fields for the SObject
+        Map < String, Schema.SObjectField > fieldMap = objDescribe.fields.getMap();
+        
+        // Get the list of picklist values for this field.
+        list < Schema.PicklistEntry > values = fieldMap.get(fld).getDescribe().getPickListValues();
+        
+        // Add these values to the selectoption list.
+        for (Schema.PicklistEntry a: values)
+        {
+            allOpts.add(a.getValue());
+        }
+        System.debug('allOpts ---->' + allOpts);
+        allOpts.sort();
+        
+        return allOpts;
+    }
+    
+    /* It is used to obtain all Activity Codes*/
+    @AuraEnabled
+    public static List<Activity_Code__c> getAllActivityCodes(String tourId)
+    {    
+        System.debug(' 555 -----TourId---------'+TourId);
+        Tour_Bill_Claim__c eachTour = [SELECT Id,Expense__c FROM Tour_Bill_Claim__c WHERE Id =: TourId];
+        
+        System.debug(' 555 -----eachTour ---------'+eachTour);
+        
+        Milestone1_Expense__c expenseRec = [SELECT Id,Project_Name__c FROM Milestone1_Expense__c WHERE ID =: eachTour.Expense__c];
+        String projectid = expenseRec.Project_Name__c;
+        System.debug('--------------'+projectid);
+        
+        List<Activity_Code__c> lstActivity = [ SELECT Id, Name FROM Activity_Code__c WHERE Project__c =: projectid ];
+        System.debug('---lstActivity --'+ lstActivity );
+        
+        List<Activity_Code__c> getActivityCodes = new List<Activity_Code__c>();
+        for ( Activity_Code__c eachActivity  : lstActivity)
+        {
+            if(eachActivity.Name != null)
+            {
+                getActivityCodes.add(eachActivity);
+            }
+        }
+        getActivityCodes.sort();
+        return getActivityCodes;
+        
+        /* Id strRecordTypeId = Schema.SObjectType.Milestone1_Task__c.getRecordTypeInfosByName().get('Project tasks').getRecordTypeId();
+System.debug('--- strRecordTypeId: ' + strRecordTypeId);
+
+System.debug('---- tourId: ' + tourId);
+List<Tour_Bill_Claim__c> lstTourBillClaim = [SELECT Expense__r.Project_Name__c FROM Tour_Bill_Claim__c WHERE Id =: tourId];
+System.debug('---- lstTourBillClaim: ' + lstTourBillClaim);
+
+List<Milestone1_Task__c> lstTask = new List<Milestone1_Task__c>();
+
+if(lstTourBillClaim != null && lstTourBillClaim.size() > 0 && lstTourBillClaim[0] != null 
+&& lstTourBillClaim[0].Expense__r != null && lstTourBillClaim[0].Expense__r.Project_Name__c != null)
+{
+lstTask = [SELECT Id , Activity_Code__c,Project_Milestone__r.Project__c 
+FROM Milestone1_Task__c 
+WHERE 
+Activity_Code__c != null 
+AND RecordTypeID = :strRecordTypeId
+AND Project_Milestone__r.Project__c = :lstTourBillClaim[0].Expense__r.Project_Name__c];
+System.debug('---- lstTask: ' + lstTask);
+lstTask.sort();
+}
+return lstTask;
+*/
+    }
+    
+    /*	Used to Obtain No. of Days between the Arrival days and Departure date to calculate the total amount allocated for Boarding & Lodging	*/
+    @AuraEnabled
+    public static Decimal getDateUpdateval(DateTime fromDateTime, DateTime toDateTime, Decimal policyExpense)
+    {
+        Integer daysCount = 0;
+        daysCount = fromDateTime.date().daysBetween(toDateTime.date());
+        System.debug('---- daysCount: ' + daysCount);   System.debug('---- policyExpense: ' + policyExpense); 
+        
+        Decimal fromHours = ((24 * 60) - (fromDateTime.hour() * 60 + fromDateTime.minute()))/(60);
+        System.debug('--- fromHours: ' + fromHours);
+        Decimal expense = 0.00;
+        
+        System.debug('----- fromDateTime.date(): ' + fromDateTime.date() + ' :::: toDateTime.date(): ' + toDateTime.date());
+        
+        if(fromDateTime.date() == toDateTime.date())
+        {
+            Decimal totalHours = (toDateTime.getTime() - fromDateTime.getTime())/(1000 * 60 * 60);
+            System.debug('---- totalHours: ' + totalHours);
+            System.debug('---- expense: ' + expense);
+            System.debug('---- policyExpense: ' + policyExpense); 
+            
+            if(totalHours >= 12)
+            {
+                expense += policyExpense;
+            }
+            else
+            {
+                expense += policyExpense/2;
+            }
+            System.debug('---- expense: ' + expense);
+        }
+        else
+        {
+            System.debug('---- ELSE expense 1: ' + expense);   System.debug('---- policyExpense: ' + policyExpense); 
+            if(fromHours < 12)
+            {
+                expense += (policyExpense / 2);
+            }
+            else if(fromHours >= 12)
+            {
+                expense += policyExpense;
+            }
+            System.debug('---- daysCount: ' + daysCount);
+            Decimal toHours = (toDateTime.hour() * 60 + toDateTime.minute())/60;
+            System.debug('--- toHours: ' + toHours); System.debug('---- ELSE expense 2: ' + expense);
+            
+            if(toHours < 12)
+            {
+                expense += (policyExpense / 2);
+            }
+            else if(toHours >= 12)
+            {
+                expense += policyExpense;
+            }
+        }
+        System.debug('---- expense: ' + expense);
+        System.debug('---- daysCount: ' + daysCount);
+        System.debug('---- policyExpense: ' + policyExpense); 
+        
+        daysCount = daysCount > 0 ? daysCount - 1 : daysCount;
+        Decimal totalAllowance = expense + (policyExpense * daysCount);
+        System.debug('---- totalAllowance: ' + totalAllowance);
+        return totalAllowance;
+    }
+    
+    /* It is used to get the Value of Expense allocated for a City on the basis of Tiers (Tier1 city, Tier 2 etc)*/
+    @AuraEnabled
+    public static List<Decimal> getCityExpense(String cityName)
+    {
+        List<Decimal> lstAmount = new List<Decimal>();
+        
+        User objUser_PolicyDesignation =  [Select Policy_Designation__c From User WHERE Id = : UserInfo.getUserId() ];
+        System.debug('---- objUser_PolicyDesignation: ' + objUser_PolicyDesignation);
+        
+        List<Tour_City__c> lstCity = [SELECT Id ,City__c,Tier__c,
+                                      (SELECT Id,Boarding_Lodging__c,Daily_Allowance_amount__c,Designation__c, Own_Stay__c 
+                                       FROM Tour_Expenses__r 
+                                       WHERE 
+                                       Designation__c =: objUser_PolicyDesignation.Policy_Designation__c) 
+                                      FROM Tour_City__c 
+                                      WHERE 
+                                      City__c =: cityName]; 
+        System.debug('---- lstCity: ' + lstCity);
+        
+        if(lstCity != null && lstCity.size() > 0 && lstCity[0] != null 
+           && lstCity[0].Tour_Expenses__r != null && lstCity[0].Tour_Expenses__r.size() > 0 
+           && lstCity[0].Tour_Expenses__r[0] != null)
+        {
+            if(lstCity[0].Tour_Expenses__r[0].Boarding_Lodging__c != null)
+                lstAmount.add(lstCity[0].Tour_Expenses__r[0].Boarding_Lodging__c);
+            if(lstCity[0].Tour_Expenses__r[0].Daily_Allowance_amount__c != null)
+                lstAmount.add(lstCity[0].Tour_Expenses__r[0].Daily_Allowance_amount__c);
+            if(lstCity[0].Tour_Expenses__r[0].Own_Stay__c != null)
+                lstAmount.add(lstCity[0].Tour_Expenses__r[0].Own_Stay__c);
+        }
+        return lstAmount;
+    }
+    
+    //If need to show the time in Local, so you can use this method.
+   public static Datetime getLocalDateTime(Datetime refDT)
+    {    
+        Datetime dtConverted = refDT.Date();
+        System.debug('---- dtConverted: ' + dtConverted);
+        dtConverted = dtConverted.addHours(refDT.hour());
+        dtConverted = dtConverted.addMinutes(refDT.minute());
+        dtConverted = dtConverted.addSeconds(refDT.second());   
+        return dtConverted;
+    }
+    
+    /*	It is used to fetch the details of Impaneled Vendors	*/ 
+    @AuraEnabled
+    public static List<Impaneled_Vendor__c> findVendors(String serviceName, String itemId)
+    {
+        System.debug('----- serviceName: ' + serviceName);
+        System.debug('----- itemId: ' + itemId);
+        
+        List<Impaneled_Vendor__c> lstVendor = [SELECT Id, /*Location_Vendor__c, Services__c, Items__c, */
+                                               (SELECT Id, LinkedEntityId, ContentDocumentId, ContentDocument.Title 
+                                                FROM ContentDocumentLinks ORDER BY ContentDocument.CreatedDate DESC LIMIT 1)
+                                               FROM Impaneled_Vendor__c
+                                              // WHERE
+                                               //Services__c = :serviceName
+                                              // Items__c = :itemId
+                                                ];
+        System.debug('---- lstVendor: ' + lstVendor);
+        
+        if(lstVendor != null && lstVendor.size() > 0)
+        {
+            return lstVendor;
+        }
+        return null;
+    }
+}

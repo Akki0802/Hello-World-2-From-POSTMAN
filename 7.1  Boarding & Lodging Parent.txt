@@ -1,0 +1,650 @@
+<!--Parent Lightning Compomemt-->
+<aura:component controller="LLF_Boarding_Lodging" Implements="flexipage:availableForRecordHome,force:hasRecordId">
+    <!--Init handler which is call doInit js function on component Load-->  
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <!--<aura:attribute name="recordId" type="String"  />-->
+    <aura:attribute name="ListFileData" type="Object[]" />
+    <aura:attribute name="IndexOfFileUpload" type="Integer[]" />
+    
+    <!--Event handler for Add and Delete Row Event which is fire from Child Component-->    
+    <aura:handler name="DeleteRowEvt" event="c:DeleteRowEvt" action="{!c.removeDeletedRow}"/>
+    <aura:handler name="AddRowEvt" event="c:AddNewRowEvt" action="{!c.addNewRow}"/>
+    <aura:handler name="AddNewFilesEvt" event="c:AddNewFilesEvt" action="{!c.AddNewFilesEvt}" />
+    <aura:handler name="AddtaskId" event="c:AddtaskId" action="{!c.AddtaskId}"/>
+    <!--Aura Attribute for store Contact Object List as Array-->
+    <aura:attribute name="BoardingLodgingList" type="Boarding_Lodging__c[]"/> 
+     <aura:attribute name="attachmentTracker" type="List" />
+   
+    <!--Header Part        
+    <div class="slds-page-header">
+        <h1 class="slds-page-header__title">Boarding &amp; Lodging(Voucher Attached)</h1>
+    </div>
+    -->
+     <div class="slds-page-header">
+        <div class="slds-page-header__row">
+            <div class="slds-page-header__col-title">
+                <div class="slds-media">
+                   
+                    <div class="slds-media__body">
+                        <div class="slds-page-header__name">
+                            <div class="slds-page-header__name-title">
+                                <h1>
+                                    <span class="slds-page-header__title slds-truncate" title="Conveyance Voucher Register ">Boarding &amp; Lodging(Voucher Attached)</span>
+                                </h1>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <lightning:button class="slds-m-left_xx-large slds-float_right" variant="neutral" label="Boarding &amp; Lodging Policy Document" onclick="{! c.openPettyFile }"/>
+            
+        </div>
+    </div>
+    
+    
+    
+    
+    
+    <!--Table Part-->
+    <div class="slds-scrollable_x" style="height:100%; width: 100%;">
+        <table class="slds-table slds-table_bordered slds-table_cell-buffer"> 
+            <thead>
+                <tr class="slds-text-title_caps">
+                    <th scope="col">
+                        <div class="slds-truncate color">No.</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="Stay Option">*Stay Option</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="Activity Code">*Activity Code</div>
+                    </th>
+                    
+                    <th scope="col">
+                        <div class="slds-truncate" title="Place Journey">*Place Journey</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="Other City">Other City</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="From">*From(Departure Time from Residence)</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="To">*To(Arrival Time to Residence)</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="Total Own Stay Amount">Total Own Stay Amount</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="Total Allowance">Total Allowance</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="Daily Allowance">Daily Alw.per day</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="Amount for B &amp; L">Amt for B &amp; L</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="Actual Amount for B &amp; L">Actual Amt for B &amp; L</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="Own Stay Amount">Own Stay Amount</div>
+                    </th>
+                    <th scope="col">
+                        <div class="slds-truncate" title="Upload File">*Upload File</div>
+                    </th>
+                </tr>
+            </thead>   
+            <tbody>
+                <!--Iterate the child Component for display Table rows 
+                       with pass the List Item Index for track the Every child Component 
+                       and pass each List Contact Instance -->
+                <aura:iteration items="{!v.BoardingLodgingList}" var="item" indexVar="index">
+                    <c:LLF_Boarding_Lodging_Voucher_Child BoardingLodgingInstance="{!item}" rowIndex="{!index}" recordId="{!v.recordId}"
+                                                          attachmentTracker="{!v.attachmentTracker}" />
+                </aura:iteration>
+            </tbody>
+        </table>
+    </div>
+    <br/>
+    <!--Save Button which is call Save js function on click --> 
+    <button class="slds-button slds-button_brand" onclick="{!c.Save}">Save</button>
+</aura:component>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+({
+    // function call on component Load
+    doInit: function(component, event, helper) {
+        console.log('Hello brother');  
+        helper.createObjectData(component, event);//recordId  
+    },
+    
+    // function for save the Records 
+   Save: function(component, event, helper) {
+        if (helper.validateRequired(component, event)) {
+            // call the apex class method for save the Contact List
+            // with pass the contact List attribute to method param.  
+            var action = component.get("c.saveBoardingLodging");
+            action.setParams({
+                "ListOfBoardingLodging": component.get("v.BoardingLodgingList")
+            });
+            // set call back 
+            
+            action.setCallback(this, function(response) {
+                
+                var state = response.getState();
+                if (state === "SUCCESS") {
+                    var values = response.getReturnValue();
+                    
+                    console.log('testing'+JSON.stringify(values));
+                    var lstRec = component.get("v.BoardingLodgingList");
+                    var fileVal = component.get("v.ListFileData");
+                    var unique = component.get("v.IndexOfFileUpload");
+                    for ( var i = 0; i < values.length; i++) {
+                        if(unique.indexOf(i) !== -1){
+                            var fileName = fileVal[i];
+                            var parentId = values[i];
+                            helper.uploadHelper(component, event,fileName,parentId);
+                        }
+                    }
+                    component.set("v.BoardingLodgingList", []);
+                    helper.createObjectData(component, event);
+                    //alert('record Save');
+                    var toastEvent = $A.get("e.force:showToast");
+                    toastEvent.setParams({
+                        type: 'success',
+                        "message": "Boarding & Lodging Expense has been saved successfully."
+                    });
+                    toastEvent.fire();
+                }
+                else{
+                    alert('Failed');
+                }
+            });
+            // enqueue the server side action  
+            $A.enqueueAction(action);
+        }
+    },
+    
+    // function for create new object Row in Contact List 
+    addNewRow: function(component, event, helper) {
+        // call the comman "createObjectData" helper method for add new Object Row to List  
+        helper.createObjectData(component, event);
+    },
+    
+    // function for delete the row 
+    removeDeletedRow: function(component, event, helper) {
+        // get the selected row Index for delete, from Lightning Event Attribute  
+        var index = event.getParam("indexVar");
+        // get the all List (contactList attribute) and remove the Object Element Using splice method    
+        var AllRowsList = component.get("v.BoardingLodgingList");
+        console.log('Before Splice Length of PettyCashList : '+AllRowsList.length);
+        AllRowsList.splice(index, 1);
+        console.log('After Splice Length of PettyCashList : '+AllRowsList.length);
+        console.log('-- line 71 -- AllRowsList: ' + AllRowsList);
+        component.set("v.BoardingLodgingList", AllRowsList);
+       
+    },
+    openPettyFile: function(cmp, event, helper) 
+    {
+        var pettyCashPolicyDocumentId = $A.get("{!$Label.c.PettyCashPolicyDocumentId}");
+        console.log('pettyCashPolicyDocumentId '+pettyCashPolicyDocumentId);
+        var Id =[];
+        
+        /* ['0699D0000000XhxQAE'] */
+        Id.push(pettyCashPolicyDocumentId);
+        $A.get('e.lightning:openFiles').fire({
+            recordIds: Id
+        });
+    },
+    AddNewFilesEvt : function(component, event,helper){
+        var val = event.getParam("currentfileName");
+         var IndexNumber = event.getParam("IndexNumber");
+        
+        var lstOfFile = component.get("v.ListFileData");
+        console.log('Fisrt get File Array data'+lstOfFile.length);
+        //lstOfFile.push(val);
+       
+        lstOfFile[IndexNumber] = val; 
+
+        component.set("v.ListFileData",lstOfFile);
+        var test = component.get("v.ListFileData");
+       var uploadIndexes = component.get("v.IndexOfFileUpload");
+        uploadIndexes.push(IndexNumber);
+        component.set("v.IndexOfFileUpload", uploadIndexes);
+        var uniqueIndex = [];
+         for(var i=0; i < uploadIndexes.length; i++){
+            if(uniqueIndex.indexOf(uploadIndexes[i]) === -1) {
+      
+                uniqueIndex.push(uploadIndexes[i]);
+            }
+        }
+         console.log('Testing'+uniqueIndex);
+          component.set("v.IndexOfFileUpload",uniqueIndex); 
+       
+    },
+     AddtaskId :function(component,event,helper){
+        var index = event.getParam("indexVar");
+        var taskId = event.getParam("taskId");
+        var allRecords = component.get('v.BoardingLodgingList');
+         console.log('-- 116 -- Record without Task Id: '+JSON.stringify(allRecords));
+        allRecords[index].Project_Task__c = taskId;
+         console.log('-- 118-- Record with Task Id: '+JSON.stringify(allRecords));
+    }
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+({
+    createObjectData: function(component, event) {
+        
+        let attachmentTracker = component.get("v.attachmentTracker");
+        attachmentTracker.push({
+            'index' : '',
+            'attachmentName' : ''
+        })
+        component.set("v.attachmentTracker",attachmentTracker);
+        
+        // get the PettycashList from component and add(push) New Object to List  
+        var recTempId = component.get("v.recordId");
+        // alert(recTempId);
+        var RowItemList = component.get("v.BoardingLodgingList");
+        RowItemList.push({
+            'sobjectType': 'Boarding_Lodging__c',
+            'Stay_Option__c' : '',
+            'Tour_Bill_Claim__c': recTempId,
+            'Place_Journey__c': '',
+            'Daily_Allowance__c' : '',
+            'Correspondence_City__c' : '',
+            'Amount_for_boarding_and_lodging__c': '',
+            'Own_Stay_Amount__c' : '',
+            'Actual_Amount_for_boarding_and_lodging__c' : '',
+            'BoardingLodgingInstance' : '',
+            'From__c' : '',
+            'To__c' : '',
+            'Total_Allowance__c' : ''
+            
+        });
+        // set the updated list to attribute (PettycashList) again    
+        component.set("v.BoardingLodgingList", RowItemList);
+    },
+    // helper function for check if Bill No. is not null/blank on save  
+    
+    validateRequired: function(component, event)
+    {
+        let attachmentTracker = component.get("v.attachmentTracker");
+        console.log('attachmentTracker   :'+JSON.stringify(attachmentTracker));
+        
+        function fireToastEvent(toastEvent, type, message)
+        {
+            toastEvent.setParams({
+                "type" : type,
+                "message" : message
+            })
+            toastEvent.fire();
+        }
+        
+        var isValid = true;
+        var allCashRows = component.get("v.BoardingLodgingList");
+        for (var indexVar = 0; indexVar < allCashRows.length; indexVar++)
+        {
+            
+            let todayDateWithTime = new Date();
+            let todayDate = new Date(todayDateWithTime.getFullYear(), todayDateWithTime.getMonth(), todayDateWithTime.getDate());
+            console.log(' 8. todayDate  : '+todayDate);
+            
+            let selectedFromDateWithTime = new Date(allCashRows[indexVar].From__c);
+            let selectedFromDate = new Date(selectedFromDateWithTime.getFullYear(), selectedFromDateWithTime.getMonth(), selectedFromDateWithTime.getDate());
+            console.log('9. selectedFromDate  : '+selectedFromDate); 
+            
+            let selectedToDateWithTime = new Date(allCashRows[indexVar].To__c);
+            let selectedToDate = new Date(selectedToDateWithTime.getFullYear(), selectedToDateWithTime.getMonth(), selectedToDateWithTime.getDate());
+            console.log('10. selectedToDate  : '+selectedToDate);
+            
+            
+            if (allCashRows[indexVar].Stay_Option__c == '' || allCashRows[indexVar].Stay_Option__c == null ) 
+            {
+                isValid = false;
+                var toastEvent = $A.get("e.force:showToast");
+                toastEvent.setParams({
+                    //title : 'Error Message',
+                    message:'Stay Option cannot be blank at row' + (indexVar + 1),
+                    
+                    duration:' 5000',
+                    key: 'info_alt',
+                    type: 'error',
+                    mode: 'pester'
+                });
+                toastEvent.fire();
+            }
+            
+            if (allCashRows[indexVar].Place_Journey__c == ''  || allCashRows[indexVar].Place_Journey__c == null) 
+            {
+                isValid = false;
+                var toastEvent = $A.get("e.force:showToast");
+                toastEvent.setParams({
+                    //title : 'Error Message',
+                    message:'Place Journey cannot be blank at row' + (indexVar + 1),
+                    
+                    duration:' 5000',
+                    key: 'info_alt',
+                    type: 'error',
+                    mode: 'pester'
+                });
+                toastEvent.fire();
+            }
+            
+            if (allCashRows[indexVar].From__c == ''  || allCashRows[indexVar].From__c == null ) 
+            {
+                isValid = false;
+                var toastEvent = $A.get("e.force:showToast");
+                toastEvent.setParams({
+                    //title : 'Error Message',
+                    message:'From date/time cannot be blank at row' + (indexVar + 1),
+                    
+                    duration:' 5000',
+                    key: 'info_alt',
+                    type: 'error',
+                    mode: 'pester'
+                });
+                toastEvent.fire();
+            } 
+            
+            if (selectedFromDateWithTime == 'Invalid Date' || selectedFromDateWithTime == null ) 
+            {
+                isValid = false;
+                var toastEvent = $A.get('e.force:showToast');
+                if(toastEvent)
+                {
+                    let errorMsg ='Invalid FROM Date  at row'  + (indexVar + 1);
+                    fireToastEvent(toastEvent, 'error', errorMsg);
+                }
+                else
+                {	 alert('Invalid FROM  Date  at row'  + (indexVar + 1));   
+                }   return;
+            }  
+            
+            if (todayDate.getTime() < selectedFromDate.getTime()) 
+            {
+                isValid = false;
+                var toastEvent = $A.get('e.force:showToast');
+                if(toastEvent)
+                {
+                    let errorMsg ='From date cannot be of future date, at row'  + (indexVar + 1);
+                    fireToastEvent(toastEvent, 'error', errorMsg);
+                }
+                else
+                {	 alert('From date cannot be of future date, at row'  + (indexVar + 1));   
+                }   return;
+            }
+            
+            if (allCashRows[indexVar].To__c == ''  || allCashRows[indexVar].To__c == null ) 
+            {
+                isValid = false;
+                var toastEvent = $A.get("e.force:showToast");
+                toastEvent.setParams({
+                    //title : 'Error Message',
+                    message:'To date/time cannot be blank at row' + (indexVar + 1),
+                    
+                    duration:' 5000',
+                    key: 'info_alt',
+                    type: 'error',
+                    mode: 'pester'
+                });
+                toastEvent.fire();
+            }   
+            if (todayDate.getTime() < selectedToDate.getTime()) 
+            {
+                isValid = false;
+                var toastEvent = $A.get('e.force:showToast');
+                if(toastEvent)
+                {
+                    let errorMsg ='To date cannot be of future date, at row'  + (indexVar + 1);
+                    fireToastEvent(toastEvent, 'error', errorMsg);
+                }
+                else
+                {	 alert('To date cannot be of future date, at row'  + (indexVar + 1));   
+                }   return;
+            }
+            
+            
+            if (selectedToDateWithTime == 'Invalid Date' || selectedToDateWithTime == null ) 
+            {
+                isValid = false;
+                var toastEvent = $A.get('e.force:showToast');
+                if(toastEvent)
+                {
+                    let errorMsg ='Invalid TO Date  at row'  + (indexVar + 1);
+                    fireToastEvent(toastEvent, 'error', errorMsg);
+                }
+                else
+                {	 alert('Invalid TO  Date  at row'  + (indexVar + 1));   
+                }   return;
+            }  
+            
+            
+            if (selectedToDate.getTime() < selectedFromDate.getTime()) 
+            {
+                isValid = false;
+                var toastEvent = $A.get('e.force:showToast');
+                if(toastEvent)
+                {
+                    let errorMsg ='From date cannot be ahead of To date at row'  + (indexVar + 1);
+                    fireToastEvent(toastEvent, 'error', errorMsg);
+                }
+                else
+                {	 alert('From date cannot be ahead of To date at row'  + (indexVar + 1));   
+                }   return;
+            }
+            
+            if ( allCashRows[indexVar].Activity_Code_Project__c == null  || typeof(allCashRows[indexVar].Activity_Code_Project__c ) == undefined 
+                || allCashRows[indexVar].Activity_Code_Project__c == '')
+            {
+                isValid = false;
+                var toastEvent = $A.get("e.force:showToast");
+                toastEvent.setParams({
+                    //title : 'Error Message',
+                    message:'Please fill the Activity  Code, it cannot be blank at row' + (indexVar + 1),
+                    
+                    duration:' 5000',
+                    key: 'info_alt',
+                    type: 'error',
+                    mode: 'pester'
+                });
+                toastEvent.fire();  
+            }   
+            
+            if (  ( allCashRows[indexVar].Actual_Amount_for_boarding_and_lodging__c == '' 
+                   || allCashRows[indexVar].Actual_Amount_for_boarding_and_lodging__c == null) &&  allCashRows[indexVar].Stay_Option__c != 'Own Stay' )  
+            {
+                isValid = false;
+                var toastEvent = $A.get('e.force:showToast');
+                if(toastEvent)
+                {
+                    let errorMsg ='Actual Amount for B&L cannot be blank at  Row '  + (indexVar + 1);
+                    fireToastEvent(toastEvent, 'error', errorMsg);
+                }
+                else
+                {	 alert('Actual Amount for B&L cannot be blank at  Row '  + (indexVar + 1));   
+                }   return;
+            }
+            
+            if (allCashRows[indexVar].Actual_Amount_for_boarding_and_lodging__c < 0 || 
+                allCashRows[indexVar].Actual_Amount_for_boarding_and_lodging__c > 10000000)
+            {
+                isValid = false;
+                var toastEvent = $A.get('e.force:showToast');
+                if(toastEvent)
+                {
+                    let errorMsg = 'Actual Amount value exceeds at row '  + (indexVar + 1) +' , please choose an amount between 1-9999999';
+                    fireToastEvent(toastEvent, 'error', errorMsg);
+                }
+                else
+                {	 
+                    alert(' Actual Amount value exceeds at row '  + (indexVar + 1) +' , please choose an amount between 1-9999999');
+                }   
+                return; 
+            }
+            
+            if( (attachmentTracker[indexVar].attachmentName == ''  || attachmentTracker[indexVar].attachmentName == null ) && allCashRows[indexVar].Stay_Option__c != 'Own Stay' )
+            {
+                isValid = false;
+                var toastEvent = $A.get('e.force:showToast');
+                toastEvent.setParams({
+                    //title : 'Error Message',
+                    message:'Please add attachment at row ' + (indexVar + 1),
+                    
+                    duration:' 5000',
+                    key: 'info_alt',
+                    type: 'error',
+                    mode: 'pester'
+                });
+                toastEvent.fire();             
+            }
+        }
+        return isValid;
+    },
+    
+    MAX_FILE_SIZE: 100000000, //Max file size 4.5 MB 
+    CHUNK_SIZE: 750000,      //Chunk Max size 750Kb 
+    
+    uploadHelper: function(component, event,fileName,parentId)
+    {
+        console.log('testtttttttt'+fileName.type);
+        console.log('ka ho raja aajajjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj');
+        // start/show the loading spinner   
+        component.set("v.showLoadingSpinner", true);
+        // get the selected files using aura:id [return array of files]
+        //var fileInput = component.get("v.fileName");
+        // get the first file using array index[0]  
+        var file = fileName;
+        console.log('Helllllllllllllllllllllllllllllllllllllll'+file.type);
+        var self = this;
+        // check the selected file size, if select file size greter then MAX_FILE_SIZE,
+        // then show a alert msg to user,hide the loading spinner and return from function  
+        if (file.size > self.MAX_FILE_SIZE) {
+            component.set("v.showLoadingSpinner", false);
+            component.set("v.fileName", 'Alert : File size cannot exceed ' + self.MAX_FILE_SIZE + ' bytes.\n' + ' Selected file size: ' + file.size);
+            return;
+        }
+        
+        // create a FileReader object 
+        var objFileReader = new FileReader();
+        console.log('HiHelloooooooooooooooooooo');
+        // set onload function of FileReader object   
+        objFileReader.onload = $A.getCallback(function() {
+            console.log('yaha to aa jao');
+            var fileContents = objFileReader.result;
+            var base64 = 'base64,';
+            var dataStart = fileContents.indexOf(base64) + base64.length;
+            
+            fileContents = fileContents.substring(dataStart);
+            // call the uploadProcess method 
+            self.uploadProcess(component, file, fileContents,parentId);
+        });
+        console.log('Ab yaha bhi aa gya');
+        objFileReader.readAsDataURL(file);
+    },
+    
+    uploadProcess: function(component, file, fileContents,parentId) {
+        console.log('Thank god yaha to aay mai finally');
+        // set a default size or startpostiton as 0 
+        var startPosition = 0;
+        // calculate the end size or endPostion using Math.min() function which is return the min. value   
+        var endPosition = Math.min(fileContents.length, startPosition + this.CHUNK_SIZE);
+        console.log('777777777777777777777'+endPosition);
+        // start with the initial chunk, and set the attachId(last parameter)is null in begin
+        this.uploadInChunk(component, file, fileContents, startPosition, endPosition, '',parentId);
+    },
+    
+    
+    uploadInChunk: function(component, file, fileContents, startPosition, endPosition, attachId,parentId) {
+        console.log('Hello1'+file.type);
+        
+        
+        // call the apex method 'saveChunk'
+        var getchunk = fileContents.substring(startPosition, endPosition);
+        var action = component.get("c.saveChunk");
+        action.setParams({
+            parentId: parentId,
+            fileName: file.name,
+            base64Data: encodeURIComponent(getchunk),
+            contentType: file.type,
+            fileId: attachId
+        });
+        
+        // set call back 
+        action.setCallback(this, function(response) {
+            // store the response / Attachment Id   
+            attachId = response.getReturnValue();
+            console.log('Return final Id'+attachId);
+            var state = response.getState();
+            if (state === "SUCCESS") {
+                console.log('All done brother');
+                // update the start position with end postion
+                startPosition = endPosition;
+                endPosition = Math.min(fileContents.length, startPosition + this.CHUNK_SIZE);
+                // check if the start postion is still less then end postion 
+                // then call again 'uploadInChunk' method , 
+                // else, diaply alert msg and hide the loading spinner
+                if (startPosition < endPosition) {
+                    this.uploadInChunk(component, file, fileContents, startPosition, endPosition, attachId);
+                } else {
+                    // alert('all done');
+                    component.set("v.showLoadingSpinner", false);
+                }
+                // handel the response errors        
+            } else if (state === "INCOMPLETE") {
+                //alert("From server: " + response.getReturnValue());
+            } else if (state === "ERROR") {
+                var errors = response.getError();
+                if (errors) {
+                    if (errors[0] && errors[0].message) {
+                        //   console.log("Error message: " + errors[0].message);
+                    }
+                } else {
+                    //console.log("Unknown error");
+                }
+            } 
+        });
+        // enqueue the action
+        $A.enqueueAction(action);
+    }
+})

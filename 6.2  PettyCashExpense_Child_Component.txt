@@ -1,0 +1,303 @@
+<!-- Child Lightning Component for Create New Row Instance-->
+
+    <aura:component controller="LLF_getActivityOnPettyCash" >
+    <aura:attribute name="PettyCashInstance" type="Petty_Cash_Expense__c"/>
+    <aura:attribute name="rowIndex" type="String"/>
+    <aura:attribute name="lstActvityCodeAndTaskIds" type="List" />
+    <aura:attribute name="fileName" type="String" default="No File Selected.." />
+    <aura:attribute name="BillingDate" type="Date" />
+    <aura:attribute name ="attachmentTracker" type = "List" />
+    <aura:attribute name="ActivityCode" type="String" />
+    <aura:attribute name="getLength" type="Integer"/>
+    <aura:attribute name="recordId" type="String" />
+    
+    <!-- Register 2 Lightning Event for handle add or Delete rows on Parent Component  --> 
+    <aura:registerEvent name="DeleteRowEvt" type="c:DeleteRowEvt"/> 
+    <aura:registerEvent name="AddRowEvt" type="c:AddNewRowEvt"/> 
+    <aura:registerEvent name="AddNewFilesEvt" type="c:AddNewFilesEvt" />
+    <aura:registerEvent name="checkActivityEvent" type="c:checkActivityEvent" />
+    <aura:registerEvent name = "GetUploadId" type ="c:GetUploadId"  />   <!--   Get Id of Upload Box     -->
+    <aura:registerEvent name="AddtaskId" type="c:AddtaskId" />
+    
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+    
+    <tr class="slds-text-title_caps">
+        <td> 
+            {!v.rowIndex + 1}
+        </td>
+        <td>
+            <ui:inputText aura:id= "billNo" class="slds-input" value="{!v.PettyCashInstance.Bill_No__c}" maxlength="255" />
+        </td>
+        <td>
+            <ui:inputDate  aura:id = "billDate" class="slds-input" value="{!v.PettyCashInstance.Bill_Date__c}" displayDatePicker="true" required = "true" format="MM-DD-YYYY" />
+        </td>
+        <td>
+            <ui:inputSelect aura:id = "selectTask" class="slds-select"  change="{!c.selectTaskActivity}"/>
+        </td>
+        <td>
+            <ui:inputTextArea aura:id = "description" class="slds-input" value="{!v.PettyCashInstance.Description_of_activity_expenses__c}" rows="2" maxlength="255"/>
+        </td>
+        <td>
+            <ui:inputText class="slds-input" value="{!v.PettyCashInstance.Nature_of_exp__c}" maxlength="255" />
+        </td>
+        <td>
+            <ui:inputCurrency aura:id="amount" class="slds-input" value="{!v.PettyCashInstance.Amount__c}"/>
+        </td>
+        <td style="display : none">
+            <ui:inputText aura:id="testpp" class="slds-input" value="{!v.PettyCashInstance.Upload_File__c}"/>
+        </td>
+        <td>
+            <lightning:input aura:id="fileId" onchange="{!c.handleFilesChange}" type="file" name="file"  multiple="false"/>
+            <div class="slds-text-body_small slds-text-color_error">{!v.fileName} </div>
+        </td>
+        <td>
+            <!-- conditionally Display Add or Delete Icons
+                 if rowIndex is 0 then show Add New Row Icon else show delete Icon
+             --> 
+            <aura:if isTrue="{!v.rowIndex == 0}">
+                <a onclick="{!c.AddNewRow}">
+                    <lightning:icon iconName="utility:add" class="slds-icon slds-icon_small" size="small" alternativeText="add"/>
+                    <span class="slds-assistive-text">Add Icon</span>
+                </a>    
+                <aura:set attribute="else">
+                    <a onclick="{!c.AddNewRow}">
+                    <lightning:icon iconName="utility:add" class="slds-icon slds-icon_small" size="small" alternativeText="add"/>
+                    <span class="slds-assistive-text">Add Icon</span>
+                </a>  
+                    <a onclick="{!c.removeRow}">
+                        <lightning:icon variant="error" iconName="utility:delete" class="slds-icon slds-icon_small" size="small" alternativeText="icon"/>
+                        <span class="slds-assistive-text">Delete Icon</span>
+                    </a>
+                </aura:set> 
+            </aura:if>
+        </td> 
+    </tr>
+</aura:component>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+({
+    doInit : function(component,event,helper) {
+        let getRowIndex = component.get('v.rowIndex');
+        let attachmentTracker = component.get('v.attachmentTracker');
+        attachmentTracker[getRowIndex].index = getRowIndex;
+        component.set('v.attachmentTracker',attachmentTracker);
+        
+        var action = component.get("c.getAllActivityCode");
+        action.setParams({
+            expenseId : component.get("v.recordId")
+        });
+        
+        action.setCallback(this,function(response) {
+            var opts = [];
+            var status = response.getState();
+            if(status === 'SUCCESS')
+            {
+                var returnVal = response.getReturnValue();
+                component.set("v.lstActvityCodeAndTaskIds",returnVal);
+                
+                if(returnVal.length > 0)
+                {
+                    opts.push(
+                        {   "class": "optionClass",   "label": "None",   "value": "",   "text" : ""  });
+                    
+                    for(var i = 0 ; i < returnVal.length ; i++)
+                    {
+                        console.log('-----------'+JSON.stringify(returnVal[i].Name));
+                        opts.push({
+                            "class": "optionClass",  "label": returnVal[i].Activity_Code_Project__c,   "value": returnVal[i].Name,
+                            "text" :returnVal[i].Name    });
+                    }
+                    component.find("selectTask").set("v.options", opts);
+                }
+            }
+        });
+        $A.enqueueAction(action); 
+    },
+    
+    AddNewRow : function(component, event, helper){
+        // fire the AddNewRowEvt Lightning Event 
+        component.getEvent("AddRowEvt").fire();
+    },
+    
+    removeRow : function(component, event, helper) {
+        // fire the DeleteRowEvt Lightning Event and pass the deleted Row Index to Event parameter/attribute
+        console.log('Value of RowIndex  While Deletion : '+component.get("v.rowIndex"));
+        component.getEvent("DeleteRowEvt").setParams({"indexVar" : component.get("v.rowIndex") }).fire();
+    },
+    
+    //This method will set values when the picklist for Activity Code will selected/change
+    selectTaskActivity : function(component,event,helper) 
+    {
+        let selectedTaskId = component.find("selectTask").get("v.value");
+        var varIndex = component.get('v.rowIndex');
+        
+        if( selectedTaskId == 'pasha'  || selectedTaskId == '' || selectedTaskId == null || typeof(selectedTaskId) == undefined )
+        {
+            var nullActivity = '' ;
+            component.find("selectTask").set('v.value', '');
+            component.set('v.ActivityCode', '');
+            
+            var toastEvent = $A.get('e.force:showToast');
+            if(toastEvent)
+            {
+                toastEvent.setParams({
+                    "type" : "error",
+                    "message" : " Activity Code cannot be Null, please choose a valid Activity Code !"
+                })
+                toastEvent.fire();
+            }
+            else
+                alert('Activity Code cannot be Null, please choose a valid Activity Code');
+            
+            var PettyCashInstance1 = component.get('v.PettyCashInstance');
+            PettyCashInstance1.Activity_Code_Project__c = selectedTaskId;
+            component.set('v.PettyCashInstance', PettyCashInstance1);
+        }
+        else
+        {
+            let lstActvityCodeAndTaskIds = component.get("v.lstActvityCodeAndTaskIds");
+            let activityCode;
+            if(typeof(lstActvityCodeAndTaskIds) != 'undefined' && lstActvityCodeAndTaskIds.length > 0)
+            {
+                activityCode =   lstActvityCodeAndTaskIds.filter((eachRecord)=>{
+                    if(eachRecord.Name == selectedTaskId)
+                    return eachRecord;
+                })
+            }
+            
+            if(activityCode == null || activityCode == '--None--' ||activityCode == '' )
+            {
+                var toastEvent = $A.get('e.force:showToast');
+                if(toastEvent)
+                {
+                    toastEvent.setParams({
+                        "type" : "error",
+                        "message" : " Activity Code cannot be Null, please choose a valid Activity Code !"
+                    })
+                    toastEvent.fire();
+                }
+                else
+                    alert('Activity Code cannot be Null, please choose a valid Activity Code');
+            }
+            else
+            {
+                component.set('v.ActivityCode',activityCode);
+                let PettyCashInstance = component.get('v.PettyCashInstance');
+                PettyCashInstance.Activity_Code_Project__c = activityCode[0].Id ;
+                component.set("v.PettyCashInstance",PettyCashInstance);
+            }
+        }
+    },
+    
+    handleFilesChange: function(component, event, helper) 
+    {
+        let desc =  component.find("description").get('v.value');
+        let length = desc.length ;
+        
+       /* if( length > 255)
+        {
+            var toastEvent = $A.get("e.force:showToast");
+            toastEvent.setParams({
+                title : 'Error Message',
+                message:'Max. Length is 255 characters !! ',
+                
+                duration:' 5000',
+                key: 'info_alt',
+                type: 'error',
+                mode: 'pester'
+            });
+            toastEvent.fire();
+            return;
+        }
+        else
+        {
+        */
+            var fileName = 'No File Selected..';
+            var  IndexNumber = component.get("v.rowIndex");
+            if (event.getSource().get("v.files").length > 0) 
+            {
+                fileName = event.getSource().get("v.files")[0]['name'];
+                
+                /*** ----- Attachment Tracker ----- ***/
+                let attachmentTracker = component.get('v.attachmentTracker');
+                attachmentTracker[IndexNumber].attachmentName = fileName ;
+                component.set('v.attachmentTracker',attachmentTracker);   
+            }
+            
+            component.set("v.fileName", fileName);
+            var fileInput = component.find("fileId").get("v.files"); 
+            var file = fileInput[0];
+            var self = this;
+            
+            if (file.size > 4500000) {
+                var toastEvent = $A.get("e.force:showToast");
+                toastEvent.setParams({
+                    type: 'alert',
+                    mode : 'sticky',
+                    "message": 'File size cannot exceed 4500000 bytes  & File size is'+ file.size+ 'bytes',
+                });
+                toastEvent.fire();
+                
+                component.set("v.fileName", 'Please choose another file');
+                return;
+            }
+            component.getEvent("AddNewFilesEvt").setParams({ 
+                "currentfileName" : file,
+                "IndexNumber" : IndexNumber
+            }).fire();
+      //  }  // end of else
+    }
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.THIS .slds-file-selector__text {
+    display : none;
+}
