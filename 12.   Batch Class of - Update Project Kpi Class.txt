@@ -1,0 +1,289 @@
+global class UpdateProjectKpiClass_Batch implements Database.Batchable<sObject>, Database.Stateful  {
+    
+    global Database.QueryLocator start(Database.BatchableContext bc)
+    {
+        return Database.getQueryLocator(
+            'SELECT Id, Name, Detailed_Formula_Expression__c, KPI_Aggregated_Value__c,Referential_Formula_Expression__c, Project__c '+
+            'FROM Project_KPI_Aggregation__c'
+        );
+    }
+    
+    global void execute(Database.BatchableContext bc, List<Project_KPI_Aggregation__c> lstProjectKpiAggregation)
+    {
+        Map<Id, List<Project_KPI_Aggregation__c>> mapOfProjectIdWithListOfAggregatedKPI = new Map<Id, List<Project_KPI_Aggregation__c>>();
+        Map<Id, List<Project_Indicator_Aggregation__c>> mapOfProjectIdWithListOfAggregatedIndicator = new Map<Id, List<Project_Indicator_Aggregation__c>>();
+        for(Project_KPI_Aggregation__c eachKPIAggregation : lstProjectKpiAggregation)
+        {
+            System.debug('eachKPIAggregation.Referential_Formula_Expression__c  : '+eachKPIAggregation.Referential_Formula_Expression__c);
+         	if(! mapOfProjectIdWithListOfAggregatedKPI.containsKey(eachKPIAggregation.Project__c))
+            {
+                mapOfProjectIdWithListOfAggregatedKPI.put(eachKPIAggregation.Project__c, new List<Project_KPI_Aggregation__c>{eachKPIAggregation});
+            }
+            else
+            {
+                mapOfProjectIdWithListOfAggregatedKPI.get(eachKPIAggregation.Project__c).add(eachKPIAggregation);
+            }
+        }
+        
+        System.debug('mapOfProjectIdWithListOfAggregatedKPI  '+mapOfProjectIdWithListOfAggregatedKPI);
+        
+        if(mapOfProjectIdWithListOfAggregatedKPI != null && mapOfProjectIdWithListOfAggregatedKPI.size() > 0 
+           && mapOfProjectIdWithListOfAggregatedKPI.values() != null && mapOfProjectIdWithListOfAggregatedKPI.values().size() > 0)
+        {
+            	for(Project_Indicator_Aggregation__c eachAggregatedIndicator: [SELECT Id, Name, Indicator_Aggregation__c, Indicator__c, Project__c
+                                                                               FROM Project_Indicator_Aggregation__c 
+                                                                               WHERE Project__c IN : mapOfProjectIdWithListOfAggregatedKPI.keySet()])
+                {
+                    
+                    if(! mapOfProjectIdWithListOfAggregatedIndicator.containsKey(eachAggregatedIndicator.Project__c))
+                    {
+                        mapOfProjectIdWithListOfAggregatedIndicator.put(eachAggregatedIndicator.Project__c, new List<Project_Indicator_Aggregation__c>{eachAggregatedIndicator});
+                    }
+                    else
+                    {
+                        mapOfProjectIdWithListOfAggregatedIndicator.get(eachAggregatedIndicator.Project__c).add(eachAggregatedIndicator);
+                    }
+                }
+        }
+        
+        List<Project_KPI_Aggregation__c> lstProjectKpiAggregationToInsert = new List<Project_KPI_Aggregation__c>();
+        
+        for(Id eachProject : mapOfProjectIdWithListOfAggregatedKPI.keySet())
+        {
+         	   if(mapOfProjectIdWithListOfAggregatedKPI.get(eachProject) != null)
+               {
+                   List<Project_KPI_Aggregation__c> lstAggregatedKPI = mapOfProjectIdWithListOfAggregatedKPI.get(eachProject);
+                   Set<String> setOfUniqueKpiNames = new Set<String>();
+                   for(Project_KPI_Aggregation__c eachAggregatedKPI : lstAggregatedKPI)
+                   {
+                       String referentialFormulaExpression = '';
+                       if(eachAggregatedKPI.Referential_Formula_Expression__c != null)    
+                       		referentialFormulaExpression = eachAggregatedKPI.Referential_Formula_Expression__c;
+                       
+                           
+                       System.debug('');
+                       if(mapOfProjectIdWithListOfAggregatedIndicator.get(eachProject) != null)
+                       {
+                        	List<Project_Indicator_Aggregation__c> lstProjectIndicatorAggregation = mapOfProjectIdWithListOfAggregatedIndicator.get(eachProject);
+                            
+                            for(Project_Indicator_Aggregation__c eachIndicatorAggregation : lstProjectIndicatorAggregation)
+                            {
+                                System.debug('referentialFormulaExpression  '+referentialFormulaExpression);
+                                if(referentialFormulaExpression.contains(eachIndicatorAggregation.Indicator__c))
+                                {
+                                    referentialFormulaExpression = referentialFormulaExpression.replace(eachIndicatorAggregation.Indicator__c, String.valueOf(eachIndicatorAggregation.Indicator_Aggregation__c.setScale(3)));
+                                    System.debug('referentialFormulaExpression  '+referentialFormulaExpression);
+                                }
+                            }
+                       }
+                       
+                       /*** Calculation of Expression **/
+                       System.debug('referentialFormulaExpression : '+referentialFormulaExpression.split('\\,'));
+                       List<String> strExpression = referentialFormulaExpression.split('\\,');
+                       Decimal finalValue = evaluate(strExpression);
+                       System.debug('eachAggregatedKPI : '+eachAggregatedKPI.Name+' finalValue : '+finalValue);
+                       
+                       /******** Creating Instances of KPI Aggregation Object ******/
+                       if(!setOfUniqueKpiNames.contains(eachAggregatedKPI.Name))
+                       {
+                           setOfUniqueKpiNames.add(eachAggregatedKPI.Name);
+                           Project_KPI_Aggregation__c objProjectKpiagg = new Project_KPI_Aggregation__c();
+                           objProjectKpiagg.Project__c = eachProject;
+                           objProjectKpiagg.KPI_Aggregated_Value__c = finalValue;  
+                           objProjectKpiagg.Name = eachAggregatedKPI.Name;
+                           objProjectKpiagg.Detailed_Formula_Expression__c = eachAggregatedKPI.Detailed_Formula_Expression__c;
+                           objProjectKpiagg.Referential_Formula_Expression__c = eachAggregatedKPI.Referential_Formula_Expression__c;
+                           lstProjectKpiAggregationToInsert.add(objProjectKpiagg);
+                       } 
+                   }
+               }
+        }   
+        
+        if(lstProjectKpiAggregationToInsert != null && lstProjectKpiAggregationToInsert.size() > 0)
+        {
+            Database.SaveResult[]  srList = Database.insert(lstProjectKpiAggregationToInsert,false);
+            for(Database.SaveResult sr : srList)
+            {
+					if(sr.isSuccess())
+                    {
+                        System.debug('Successfully inserted with id : '+sr.getId());
+                    }
+                	else
+                    {
+                        for(Database.Error err : sr.getErrors())
+                        {
+                            System.debug('Error Message : '+err.getMessage());
+                            System.debug('Status Code : '+err.getStatusCode());
+                            System.debug('Error Fields : '+err.getFields());
+                        }
+                    }
+            }
+        }
+    }
+    
+    global void finish(Database.BatchableContext bc)
+    {
+        
+    }
+    
+    
+    
+    public Decimal  evaluate(List<String> expression)
+    {  
+        CustomStackClass numbers = new CustomStackClass();
+        CustomStackClass operations = new CustomStackClass();
+        
+        for(Integer i=0; i<expression.size(); i++) {
+            String c = expression[i];
+            System.debug(' c  : '+c);
+                
+            if(isOperand(c)){
+                Decimal dec = Decimal.valueOf(c);
+                numbers.push(c);
+                System.debug('numbers  : '+numbers);
+                
+            }
+            else if(c == '(') {
+                
+   				System.debug('Checking ( ');
+                operations.push(c);
+                system.debug('  operations  '+operations);
+            }   
+            else if(c== ')' ) {
+                
+                System.debug('Checking ) ');
+                String peekValue = (String)operations.peek();
+                System.debug('Before peekValue  '+peekValue);
+                
+                while((String)operations.peek()  != '(' )
+                {
+                    Decimal output = performOperation(numbers, operations);
+                    System.debug('output   '+output);
+                    //push it back to stack
+                    numbers.push(output);
+                }
+                operations.pop();
+            }
+            
+            // current character is operator
+            else if(isOperator(c)){
+                
+               System.debug('Checking Operator  '+c);
+               System.debug('operations.isEmpty()  : '+operations.isEmpty());
+            
+               Boolean hasPrecedenceOutput = false;
+                
+               if(!operations.isEmpty())
+               { 
+                   System.debug('Hello Hello');
+                   String peekOperator = (String)operations.peek();
+                   System.debug('Before   op1  : '+c+'  op2   : '+peekOperator);
+                   hasPrecedenceOutput = hasPrecedence(c , peekOperator );
+               }
+                
+               System.debug('hasPrecedenceOutput   : '+hasPrecedenceOutput);
+                
+               while(!operations.isEmpty() &&   hasPrecedenceOutput ){
+                    System.debug('going to perform operation ');
+                    Decimal output = performOperation(numbers, operations);
+                    System.debug('output  '+output);
+                    //push it back to stack
+                    numbers.push(output);
+                }
+                
+                //now push the current operator to stack
+                operations.push(c);
+                System.debug('After Pushing Operator operations  '+operations);
+            }
+        }
+       
+        while(!operations.isEmpty()){
+            Object output = performOperation(numbers, operations);
+            //push it back to stack
+            numbers.push(output);
+        }
+         
+        String strFinalOutputValue = String.valueOf(numbers.pop());
+        Decimal finalOutputValue = Decimal.valueOf(strFinalOutputValue);
+        System.debug('Final numbers.pop() : '+finalOutputValue);
+        return finalOutputValue;
+    }
+
+
+    
+    public Boolean hasPrecedence(String op1, String op2){
+        System.debug(' Inside hasPrecedence ');
+        system.debug('op1   : '+op1+'    op2  : '+op2);
+        
+        if (op2 == '(' || op2 == ')') 
+            return false; 
+        if ((op1 == '*' || op1 == '/') && (op2 == '+' || op2 == '-')) 
+            return false; 
+        else
+            return true; 
+    }
+
+    public Decimal performOperation(CustomStackClass numbers, CustomStackClass operations) {
+       
+        
+            System.debug('Under performOperation Method');
+            String firstOperand = String.valueOf(numbers.pop());
+            System.debug('firstOperand  '+firstOperand);
+            String secondOperand = String.valueOf(numbers.pop());
+            System.debug('secondOperand  '+secondOperand);
+            Decimal a = Decimal.valueOf(firstOperand);
+            Decimal b = Decimal.valueOf(secondOperand);
+            System.debug('a  : '+a+' b  :'+b);
+            String strOpertaion = (String)operations.pop();
+            System.debug('strOpertaion  :  '+strOpertaion);
+     
+            switch on strOpertaion {
+                when '+' {
+                    return a + b;
+                }
+                when '-' {
+                    return b - a;
+                }
+                when '*' {
+                    return a * b;
+                }
+                when '/' {
+                    return b / a;
+                }
+            }
+            
+        
+        return 0;  
+    }
+
+    public boolean isOperator(String c){
+       String strC = c;
+       System.debug(' Inside isOperator : '+strC);
+        if(strC == '+' || strC == '-' || strC == '/' || strC== '*' || strC =='^')
+        {
+            System.debug('Checking operator true');
+        	return true;    
+        }  
+        else
+        {
+           System.debug('Checking operator false');
+           return false; 
+        }   
+    }
+    
+    public boolean isOperand(String c){
+       String strC = c;
+       System.debug(' Inside isOperand : '+strC);
+       if(strC != '+' && strC != '-' && strC !='/' && strC !='*'&& strC != '^' && strC != '(' && strC != ')')
+       {
+           System.debug(' true condition ');
+           return true;
+       }
+       else
+       {
+           System.debug(' false condition ');
+           return false;
+       }      
+    }
+
+}

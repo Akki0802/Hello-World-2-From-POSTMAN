@@ -1,0 +1,146 @@
+// This class basically calculated the value of an user defined Expression Using BODMAS Rule By Using CUSTOM STACK CLASS
+
+
+  this is a method()
+  {
+  Decimal finalResultValue = evaluate(lstExpressionElements);
+  }
+
+
+
+
+    public static Decimal  evaluate(List<String> expression)
+    {  
+        CustomStackClass numbers = new CustomStackClass();
+        CustomStackClass operations = new CustomStackClass();
+        
+        for(Integer i=0; i<expression.size(); i++) 
+        {
+            String c = expression[i];
+            
+            if(isOperand(c))
+            {
+                Decimal dec = Decimal.valueOf(c);
+                numbers.push(c);
+            }
+            else if(c == '(') 
+            {
+                operations.push(c);
+            }   
+            else if(c== ')' ) 
+            {
+                System.debug('Checking ) ');
+                String peekValue = (String)operations.peek();
+                System.debug('Before peekValue  '+peekValue);
+                
+                while((String)operations.peek()  != '(' )
+                {
+                    Decimal output = performOperation(numbers, operations);
+                    //push it back to stack
+                    numbers.push(output);   System.debug('   555 *****  numbers = '+numbers);
+                }
+                operations.pop();
+            }
+            else if(isOperator(c)) // current character is operator
+            {
+                Boolean hasPrecedenceOutput = false;
+                
+                if(!operations.isEmpty())
+                {
+                    String peekOperator = (String)operations.peek();
+                    hasPrecedenceOutput = hasPrecedence(c , peekOperator );
+                }
+                
+                while(!operations.isEmpty() &&   hasPrecedenceOutput )
+                {
+                    Decimal output = performOperation(numbers, operations);
+                    //push it back to stack
+                    numbers.push(output);
+                }
+                
+                //now push the current operator to stack
+                operations.push(c);
+                System.debug('After Pushing Operator operations  '+operations);
+            }
+        }
+        
+        while(!operations.isEmpty())
+        {
+            Object output = performOperation(numbers, operations);
+            //push it back to stack
+            numbers.push(output);
+        }
+        
+        String strFinalOutputValue = String.valueOf(numbers.pop());
+        Decimal finalOutputValue = Decimal.valueOf(strFinalOutputValue);
+        System.debug('Final numbers.pop() : '+finalOutputValue);
+        return finalOutputValue;
+    }
+    
+       
+    public static Boolean hasPrecedence(String op1, String op2)
+    {
+        System.debug('op1   : '+op1+'    op2  : '+op2);
+        
+        if (op2 == '(' || op2 == ')') 
+            return false; 
+        if ((op1 == '*' || op1 == '/') && (op2 == '+' || op2 == '-')) 
+            return false; 
+        else
+            return true; 
+    }
+    
+    public static Decimal performOperation(CustomStackClass numbers, CustomStackClass operations) 
+    {
+        String firstOperand = String.valueOf(numbers.pop());
+        String secondOperand = String.valueOf(numbers.pop());
+        Decimal a = Decimal.valueOf(firstOperand);
+        Decimal b = Decimal.valueOf(secondOperand);
+        String strOpertaion = (String)operations.pop();
+        
+        switch on strOpertaion {
+            when '+' {
+                return a + b;
+            }
+            when '-' {
+                return b - a;
+            }
+            when '*' {
+                return a * b;
+            }
+            when '/' {
+                return b / a;
+            }
+        }
+        return 0;  
+    }
+    
+    public static boolean isOperator(String c)
+    {
+        String strC = c;
+        System.debug(' Inside isOperator : '+strC);
+        if(strC == '+' || strC == '-' || strC == '/' || strC== '*' || strC =='^')
+        {
+            return true;    
+        }  
+        else
+        {
+            return false; 
+        }
+    }
+    
+    public static boolean isOperand(String c)
+    {
+        String strC = c;
+        System.debug(' Inside isOperand : '+strC);
+        if(strC != '+' && strC != '-' && strC !='/' && strC !='*'&& strC != '^' && strC != '(' && strC != ')')
+        {
+            System.debug(' true condition ');
+            return true;
+        }
+        else
+        {
+            System.debug(' false condition ');
+            return false;
+        }   
+    }

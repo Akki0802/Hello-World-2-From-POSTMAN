@@ -1,0 +1,109 @@
+public class ProjectIndicatorAggregation_Batch implements Database.Batchable <SObject>
+{
+    public static Database.QueryLocator start(Database.BatchableContext bc)
+    {
+        String strQuery = 'SELECT Id, No_of_Yes__c, No_of_No__c, Weight_to_Indicator__c, No_of_Not_Required__c, Numeric_Aggregation__c, Question_Type__c, Indicator__c, '
+                        + 'IndicatorNew__c, Project_Library__c, Project_Library__r.Project__c, '
+                        + '(SELECT Id, Project_Survey_Question__c FROM Project_Survey_Response_Answers__r) FROM Project_Library_Questions__c '
+                        + 'WHERE Project_Library__c != null AND Project_Library__r.Project__c != null '
+                        + 'AND Id IN (SELECT Project_Survey_Question__c FROM Project_Survey_Response_Answer__c '
+                        + 'WHERE Project_Survey_Response__c != null AND Project_Survey_Response__r.Approval_Status__c = \'Approved\')';
+        System.debug('---- strQuery: ' + strQuery);
+        if(strQuery != null && strQuery != '')
+            return Database.getQueryLocator(strQuery);
+        else
+            return null;
+    }
+
+    public static void execute(Database.BatchableContext bc, List<Project_Library_Questions__c> lstRecord)
+    {
+        if(lstRecord != null && lstRecord.size() > 0)
+        {
+            Map<String, List<Project_Library_Questions__c>> mapIndicatorPLQ = new Map<String, List<Project_Library_Questions__c>>();
+            Set<Id> setIdProject = new Set<Id>();
+
+            for(Project_Library_Questions__c eachPLQuestion : lstRecord)
+            {
+                setIdProject.add(eachPLQuestion.Project_Library__r.Project__c);
+                String indicator = eachPLQuestion.IndicatorNew__c != null ? eachPLQuestion.IndicatorNew__c : eachPLQuestion.Indicator__c;
+                String strKey = eachPLQuestion.Project_Library__r.Project__c + '@@' + indicator;
+                if(!mapIndicatorPLQ.containsKey(strKey))
+                    mapIndicatorPLQ.put(strKey, new List<Project_Library_Questions__c>{eachPLQuestion});
+                else
+                    mapIndicatorPLQ.get(strKey).add(eachPLQuestion);
+            }
+            System.debug('---- setIdProject: ' + setIdProject);
+            System.debug('---- mapIndicatorPLQ: ' + mapIndicatorPLQ);
+
+            List<Project_Indicator_Aggregation__c> lstProjectIndicator = [SELECT Id, Project__c, Indicator__c FROM Project_Indicator_Aggregation__c 
+                                                WHERE Project__c IN :setIdProject];
+            System.debug('---- lstProjectIndicator: ' + lstProjectIndicator);
+
+            Map<String, Project_Indicator_Aggregation__c> mapIdProjectIndicator = new Map<String, Project_Indicator_Aggregation__c>();
+            if(lstProjectIndicator != null && lstProjectIndicator.size() > 0)
+            {
+                for(Project_Indicator_Aggregation__c eachPIAggregation : lstProjectIndicator)
+                {
+                    String strKey = eachPIAggregation.Project__c + '@@' + eachPIAggregation.Indicator__c;
+                    mapIdProjectIndicator.put(strKey, eachPIAggregation);
+                }
+            }
+
+            List<Project_Indicator_Aggregation__c> lstProjectIndicatorAggregationToInsert = new List<Project_Indicator_Aggregation__c>();
+            
+            for(String eachKey : mapIndicatorPLQ.keySet())
+            {
+                Double weightedAverage = 0, numerator = 0, denominator = 0, notReq = 0, numericAgg = 0;
+                Integer countNumeric = 0;
+                
+                for(Project_Library_Questions__c eachPLQuestion : mapIndicatorPLQ.get(eachKey))
+                {
+                    Decimal  noOfYes =  eachPLQuestion.No_of_Yes__c != null ? eachPLQuestion.No_of_Yes__c : 0;
+                    Double weightToIndicator = eachPLQuestion.Weight_to_Indicator__c != null ? eachPLQuestion.Weight_to_Indicator__c : 0;
+                    Decimal  noOfNo =  eachPLQuestion.No_of_No__c != null ? eachPLQuestion.No_of_No__c : 0;
+                    Decimal notRequired = eachPLQuestion.Question_Type__c != null && eachPLQuestion.Question_Type__c == 'Yes/No/Not Required' 
+                                            && eachPLQuestion.No_of_Not_Required__c != null ? eachPLQuestion.No_of_Not_Required__c : 0;
+                    
+                    numerator = numerator +  (noOfYes * weightToIndicator) + (noOfNo * 0);
+                    denominator = denominator + (eachPLQuestion.Weight_to_Indicator__c != null ? eachPLQuestion.Weight_to_Indicator__c : 0) * (noOfYes + noOfNo + notRequired);
+                    
+                    numericAgg += eachPLQuestion.Question_Type__c != null && eachPLQuestion.Question_Type__c == 'Numeric' 
+                                            && eachPLQuestion.Numeric_Aggregation__c != null ? eachPLQuestion.Numeric_Aggregation__c : 0;
+                    countNumeric += eachPLQuestion.Question_Type__c != null && eachPLQuestion.Question_Type__c == 'Numeric' 
+                                    && eachPLQuestion.Project_Survey_Response_Answers__r != null && eachPLQuestion.Project_Survey_Response_Answers__r.size() > 0 
+                                    ? eachPLQuestion.Project_Survey_Response_Answers__r.size() : 0;
+                }
+                System.debug('---- denominator: ' + denominator);
+                System.debug('---- numerator: ' + numerator);
+                System.debug('---- numericAgg: ' + numericAgg);
+                System.debug('---- countNumeric: ' + countNumeric);
+                
+                weightedAverage = denominator != 0 ? numerator/denominator : (numericAgg >= 0 && countNumeric > 0 ? numericAgg / countNumeric : 0);
+                System.debug('---- weightedAverage: ' + weightedAverage);
+
+                Project_Indicator_Aggregation__c objProjectIndicatorAggregation = new Project_Indicator_Aggregation__c();
+                objProjectIndicatorAggregation.Project__c = eachKey.split('@@')[0];
+                objProjectIndicatorAggregation.Indicator_Aggregation__c = weightedAverage;
+                objProjectIndicatorAggregation.Indicator__c = eachKey.split('@@')[1];
+
+                if(mapIdProjectIndicator != null && mapIdProjectIndicator.size() > 0 && mapIdProjectIndicator.containsKey(eachKey))
+                {
+                    objProjectIndicatorAggregation.Id = mapIdProjectIndicator.get(eachKey).Id;
+                }
+
+                lstProjectIndicatorAggregationToInsert.add(objProjectIndicatorAggregation);
+            }
+            System.debug('---- lstProjectIndicatorAggregationToInsert: ' + lstProjectIndicatorAggregationToInsert);
+
+            if(lstProjectIndicatorAggregationToInsert != null && lstProjectIndicatorAggregationToInsert.size() > 0)
+            {
+                upsert lstProjectIndicatorAggregationToInsert;
+            }
+        }
+    }
+
+    public static void finish(Database.BatchableContext bc)
+    {
+
+    }
+}
