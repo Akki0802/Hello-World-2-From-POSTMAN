@@ -1,0 +1,14 @@
+trigger trgContentDocument on ContentDocument (before delete, after delete) 
+{    
+    if(Trigger.isDelete && Trigger.isBefore)
+    {
+  	System.debug('1.0  oldDoc');
+          List<ContentDocument> lstContentDoc = trigger.isDelete ? trigger.old : trigger.new;
+	  trgContentDocumentHandler.DeletingAttachmentARF(lstContentDoc); 			
+          trgContentDocumentHandler.DeleteLeadAttachment(trigger.old);
+       
+    } 
+
+ 
+    
+}

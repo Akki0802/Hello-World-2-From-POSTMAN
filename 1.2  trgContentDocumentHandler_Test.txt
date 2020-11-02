@@ -1,0 +1,95 @@
+@isTest
+public class trgContentDocumentHandler_Test 
+{
+    static testMethod void UnitTest1()
+    {
+        List<ContentDocument> lstCon= new List<ContentDocument>(); 
+        Set<Id> contentDocumentIDs = new Set<Id>();
+        Set<Id> contentDocumentLinkIDs = new Set<Id>();
+        
+        Contact objCon1 = MasterTestUtility.getContact('Sudesh', 'Sharma');
+        insert objCon1;
+        
+        Date date1 = Date.today();
+        Milestone1_Project__c project = MasterTestUtility.createProject('Test project',date1 , date1,'External Project' );
+        project.Project_Manager__c =  userInfo.getUserId();   
+        insert project;
+        
+        Asset_Requisition_Form__c reForm = MasterTestUtility.getAssetForm('Asset 1',project);
+        reForm.Project_Department__c=project.id;
+        reForm.Num_of_Attachments__c = 1;
+        reForm.Accounts_Approval__c = 'Approved';
+        reForm.Submitted_By_Salesforce_User__c = UserInfo.getUserId();
+        reForm.Submitted_By_Heroku_User__c = objCon1.Id;
+        insert reForm;  
+        
+        ContentVersion cv=MasterTestUtility.getContentVersion('ABC','abc');
+        insert cv;        
+        System.assertNotEquals(null ,cv.Id);
+        ContentVersion testContent = [SELECT id, ContentDocumentId FROM ContentVersion where Id = :cv.Id];
+        
+        ContentDocument cd =   [SELECT Id From ContentDocument ];// new ContentDocument();
+        lstCon.add(cd);
+        System.debug(' ** cd = '+cd);
+        
+        contentDocumentIDs.add(testContent.ContentDocumentId);               System.debug(' ** contentDocumentIDs = '+ contentDocumentIDs);
+        
+        ContentDocumentLink contentlink = new ContentDocumentLink();
+        contentlink.ShareType = 'V';
+        contentlink.LinkedEntityId = reForm.Id; 
+        contentlink.ContentDocumentId  =testcontent.ContentDocumentId;
+        contentlink.Visibility = 'AllUsers';
+        insert contentlink; 
+        delete contentlink;
+        List<ContentDocumentLink> lstContent = new List<ContentDocumentLink>();
+        lstContent.add(contentlink); 
+        contentDocumentLinkIDs.add(contentlink.Id);
+        delete cd;
+        trgContentDocumentHandler.DeletingAttachmentARF(lstCon);
+    }
+    
+   
+    static testMethod void UnitTest2()
+    {
+        Lead objLead2 = leadCreation1();      
+        insert objLead2;
+        system.debug('objLEad '+objLead2.id);
+        ContentVersion cv = MasterTestUtility.getContentVersion('ABC','abc');
+        insert cv;        
+        System.assertNotEquals(null ,cv.Id);
+        
+        ContentVersion testContent = [SELECT id, ContentDocumentId FROM ContentVersion where Id = :cv.Id];
+        system.debug('vdgsdc'+testContent); 
+        
+        ContentDocument cd =   [SELECT Id From ContentDocument where id=:testContent.ContentDocumentId];
+        system.debug('sfdgfdfgdf'+cd); 
+        
+        ContentDocumentLink contentlink = new ContentDocumentLink();
+        contentlink.ShareType = 'V';
+        contentlink.LinkedEntityId = objLead2.Id; 
+        contentlink.ContentDocumentId  = cd.Id; // testcontent.ContentDocumentId;
+        contentlink.Visibility = 'AllUsers';
+        insert contentlink; 
+        delete cd;
+    } 
+    
+    
+    static Lead leadCreation1()
+    {
+        Lead objLead1 = new Lead();
+        objLead1.Status = 'Proposal Sign-Off';
+        objLead1.CurrencyIsoCode = 'INR ';
+        objLead1.Donor_Type__c = 'Existing' ;
+        objLead1.MobilePhone = '5060708091';
+        objLead1.Email_Domain__c= 'Kloudrac';
+        objLead1.LastName='Lead Test-1';
+        objLead1.Company='Google';
+        objLead1.Email='agupta1@gmail.com';
+        objLead1.Country_Code__c='+91';
+        objLead1.Number_Of_projects__c=6;
+        objLead1.NumberOfAttachments__c = 1;
+        return objLead1;
+    }    
+    
+    
+}

@@ -1,0 +1,120 @@
+public class trgContentDocumentHandler 
+{    
+    public static void DeletingAttachmentARF(List<ContentDocument> lstOld)
+    {
+        System.debug('delete trigger ran');
+        Set<Id> contentDocumentIDs = new Set<Id>();
+        Set<Id> contentDocumentLinkIDs = new Set<Id>();
+        for(ContentDocument cd : (List<ContentDocument>) lstOld) // Trigger.old)
+        {
+            contentDocumentIDs.add(cd.Id);
+        }
+        System.debug('contentDocumentIDs: ' + contentDocumentIDs + '    contentDocumentIDs.size(): ' + contentDocumentIDs.size());
+        
+        List<ContentDocumentLink> contentDocumentLinks = new List<ContentDocumentLink>( [SELECT Id, LinkedEntityId  FROM ContentDocumentLink
+                                                                                         WHERE ContentDocumentId IN :contentDocumentIDs  ]);
+        
+        System.debug('contentDocumentLinkIDs: ' + contentDocumentLinks + '  contentDocumentLinkIDs.size(): ' + contentDocumentLinks.size()); 
+        
+        Set<Id> parentQuoteDocumentIds = new Set<Id>();
+        
+        for(ContentDocumentLink cdl : contentDocumentLinks)
+        {
+            parentQuoteDocumentIds.add(cdl.LinkedEntityId);
+        }
+        
+        System.debug('parentQuoteDocumentIds: ' + parentQuoteDocumentIds  + '    parentQuoteDocumentIds.size(): ' + parentQuoteDocumentIds.size()); 
+        
+        List<Asset_Requisition_Form__c> quoteDocList = [ SELECT Id,(SELECT Id FROM ContentDocumentLinks) FROM Asset_Requisition_Form__c
+                                                        WHERE Id IN :parentQuoteDocumentIds];
+        
+        System.debug('quoteDocList: ' + quoteDocList  + '   quoteDocList.size(): ' + quoteDocList.size()); 
+        
+        for(Asset_Requisition_Form__c qd : quoteDocList)
+        {
+            qd.Num_of_Attachments__c = qd.ContentDocumentLinks.size();
+            System.debug(' *** ATTACHMENT ====>>  No. of Attachments on Asset = '+qd.Num_of_Attachments__c);
+            if(qd.Num_of_Attachments__c == 1  )		
+            {
+                System.debug(' *** ATTACHMENT is ZERO  No. of Attachments on Asset = '+qd.Num_of_Attachments__c);
+                qd.PO_Attachment_URL_By_Accounts__c = '';     
+            }
+        }
+        update quoteDocList;
+    }
+    
+    
+    public static void DeleteLeadAttachment(List<ContentDocument> lstOld)
+    {
+        
+        //---------------------------------------------------------------------------------------------------------------------------------------------------------     
+        Set<Id> setOfContentDocumentId = new Set<Id>();
+        Map<Id, Id> mapOfContentDocumentIdWithLinkedEntityId = new Map<Id, Id>();
+        Set<Id> setOfLeadIds = new Set<Id>();
+        for(ContentDocument eachConDoc : lstOld)
+        {
+            // System.debug('D** eachConDoc.ParentId  : '+eachConDoc.ParentId);
+            setOfContentDocumentId.add(eachConDoc.Id);
+        }
+        
+        System.debug('setOfContentDocumentId   :  '+setOfContentDocumentId);
+        
+        List<ContentDocumentLink> lstCDL = [SELECT ContentDocumentId, LinkedEntityId FROM ContentDocumentLink   
+                                            WHERE ContentDocumentId IN : setOfContentDocumentId];
+        System.debug('D** lstCDL   :  '+lstCDL);
+        
+        for(ContentDocumentLink cdl :  lstCDL )   //  [SELECT ContentDocumentId, LinkedEntityId FROM ContentDocumentLink WHERE ContentDocumentId IN : setOfContentDocumentId]) 
+        {    System.debug('D** cdl.LinkedEntityId  : '+cdl.LinkedEntityId +'  cdlContentDocumentId =  '+ cdl.ContentDocumentId + 'D** cdl.LinkedEntityId  sObjectType : '+cdl.LinkedEntityId.getSobjectType());
+         if(cdl.ContentDocumentId != null && cdl.LinkedEntityId != null && cdl.LinkedEntityId.getSobjectType() == Lead.sObjectType)
+         {
+             mapOfContentDocumentIdWithLinkedEntityId.put(cdl.ContentDocumentId, cdl.LinkedEntityId);
+             System.debug('D** cdl.LinkedEntityId  sObjectType : '+cdl.LinkedEntityId.getSobjectType());
+         }
+        }
+        
+        System.debug('D** mapOfContentDocumentIdWithLinkedEntityId  : '+mapOfContentDocumentIdWithLinkedEntityId);
+        
+        for(ContentDocument eachConDoc : lstOld)
+        {
+            System.debug('D** eachConDoc.ID  '+eachConDoc.Id);
+            if(mapOfContentDocumentIdWithLinkedEntityId != null && mapOfContentDocumentIdWithLinkedEntityId.size() > 0)
+            {
+                if(mapOfContentDocumentIdWithLinkedEntityId.get(eachConDoc.Id).getSobjectType() == Lead.sObjectType)
+                {
+                    setOfLeadIds.add(mapOfContentDocumentIdWithLinkedEntityId.get(eachConDoc.Id));
+                }  
+            }
+        } 
+        
+        System.debug('D** setOfLeadIds   : '+setOfLeadIds);
+        
+        if(setOfLeadIds != null && setOfLeadIds.size() > 0)
+        {
+            List<Lead> lstLeadToUpdate =  new List<Lead>();
+            
+            for(Lead eachLead :   [SELECT Id, NumberOfAttachments__c FROM Lead  WHERE Id IN : setOfLeadIds])
+            {
+                System.debug('D** eachLead.NumberOfAttachments__c  '+eachLead.NumberOfAttachments__c);
+                if(eachLead.NumberOfAttachments__c != null && eachLead.NumberOfAttachments__c == 1)
+                {
+                    System.debug('D** if Condition');
+                    eachLead.NumberOfAttachments__c = 0;
+                }
+                else if(eachLead.NumberOfAttachments__c != null && eachLead.NumberOfAttachments__c > 0)
+                {
+                    System.debug('D** Else if Condition');
+                    eachLead.NumberOfAttachments__c -= 1;                    
+                }
+                lstLeadToUpdate.add(eachLead);
+            }
+            System.debug('D** lstLeadToUpdate  : '+lstLeadToUpdate);
+            if(lstLeadToUpdate != null && lstLeadToUpdate.size() > 0)
+            {
+                update lstLeadToUpdate;
+            } 
+        }  
+    }
+    
+ 
+    
+}
