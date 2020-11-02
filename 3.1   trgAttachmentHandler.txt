@@ -1,0 +1,82 @@
+/*------------------------------------------------------------------------
+Trigger Name : trgAttachment
+Test Class :   trgAttachmentHandler_Test
+------------------------------------------------------------------------- */
+public class trgAttachmentHandler 
+{
+
+    public static void countNumberOfQuotesOnNonITForm(List<Attachment> lstAttchmentNew)   
+    {
+         Set<Id> setOfProcIds = new Set<Id>();
+        
+        for(Attachment att : lstAttchmentNew)
+        {
+          if(att.ParentId.getSobjectType() == Product_Line_Item__c.SobjectType)
+          {
+              setOfProcIds.add(att.ParentId);               
+          }
+        }
+        System.debug('setOfProcIds  : '+setOfProcIds);
+        
+        if(setOfProcIds != null && setOfProcIds.size() > 0)
+        {
+            List<Product_Line_Item__c> lstToUpdate = new List<Product_Line_Item__c>();
+            List<Product_Line_Item__c> lstProductLines = [SELECT Id ,Number_of_quotes__c FROM Product_Line_Item__c WHERE Id IN : setOfProcIds];
+            
+            for(Product_Line_Item__c eachPLI :  lstProductLines)
+            {
+                if(eachPLI.Number_of_quotes__c == null)
+                {
+                    eachPLI.Number_of_quotes__c = 1;
+                }
+                else  
+                {   eachPLI.Number_of_quotes__c += 1;                    
+                }
+                lstToUpdate.add(eachPLI);
+            }
+            System.debug('lstToUpdate   : '+lstToUpdate);
+            if(lstToUpdate != null && lstToUpdate.size() > 0)
+            {
+                update lstToUpdate;
+            }
+        }
+    }
+    
+    public static void countNumberOfQuotesOnITForm(List<Attachment> lstAttchmentNew)   
+    {
+         Set<Id> setOfProcIds = new Set<Id>();
+        
+        for(Attachment att : lstAttchmentNew)
+        {
+          if(att.ParentId.getSobjectType() == Product_Line_Item_IT__c.SobjectType)
+          {
+              setOfProcIds.add(att.ParentId);               
+          }
+        }
+        System.debug('setOfProcIds  : '+setOfProcIds);
+        
+        if(setOfProcIds != null && setOfProcIds.size() > 0)
+        {
+            List<Product_Line_Item_IT__c> lstToUpdate = new List<Product_Line_Item_IT__c>();
+            List<Product_Line_Item_IT__c> lstProductLines = [SELECT Id ,Number_of_quotes__c FROM Product_Line_Item_IT__c  WHERE Id IN : setOfProcIds];
+            
+            for(Product_Line_Item_IT__c eachPLI :  lstProductLines)
+            {
+                if(eachPLI.Number_of_quotes__c == null)
+                {
+                    eachPLI.Number_of_quotes__c = 1;
+                }
+                else  
+                {
+                        eachPLI.Number_of_quotes__c += 1;                    
+                }
+                lstToUpdate.add(eachPLI);
+            }
+            System.debug('lstToUpdate   : '+lstToUpdate);
+            if(lstToUpdate != null && lstToUpdate.size() > 0)
+            {
+                update lstToUpdate;
+            }
+        }
+    }
+}

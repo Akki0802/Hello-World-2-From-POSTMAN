@@ -1,0 +1,57 @@
+/*------------------------------------------------------------------------
+CreatedBy:   	  Ankit Gupta
+Modified By:      Ankit Gupta
+Modified Date :   24/September/2020
+Apex Class :      trgAttachmentHandler
+------------------------------------------------------------------------- */
+@isTest
+public class trgAttachmentHandler_Test 
+{
+    
+    static testMethod void unitTest1()
+    {
+        List<Attachment> lstAttachNonIT = new List<Attachment>();
+        List<Attachment> lstAttachIT = new List<Attachment>();
+        Set<Product_Line_Item__c> setNonIT = new Set<Product_Line_Item__c>();
+        Set<Product_Line_Item_IT__c> setIT = new Set<Product_Line_Item_IT__c>();
+        Set<Asset_Requisition_Form__c> setOfProcIds = new Set<Asset_Requisition_Form__c>(); 
+        
+        Date date1 = Date.today();
+        Milestone1_Project__c objProject =  MasterTestUtility.createProject('Test Project 1', date1, date1, 'Internal Project');
+        insert objProject ;
+        
+        Asset_Requisition_Form__c objAsset = MasterTestUtility.getAssetForm('Asset 1', objProject);
+        insert objAsset ;
+        setOfProcIds.add(objAsset);
+        
+        Impaneled_Vendor__c objVendor = MasterTestUtility.getVendor();
+        objVendor.Reason_for_not_providing_GST_no__c= 'szf';
+        insert objVendor;
+        
+        Product_Line_Item__c objProNonIT = MasterTestUtility.getProductLineItem_NonIt(objAsset);
+        objProNonIT.Impaneled_Vendor__c = objVendor.Id;
+        insert objProNonIT;
+        setNonIT.add(objProNonIT);
+        
+        Attachment attach1 = new Attachment();     
+        attach1.Name='Test Attachment';
+        Blob bodyBlob1=Blob.valueOf('Test Attachment Body');
+        attach1.body=bodyBlob1;
+        attach1.parentId=objProNonIT.id;      
+        lstAttachNonIT.add(attach1);
+        
+        Product_Line_Item_IT__c objProIT = MasterTestUtility.getProductLineItem_IT(objAsset);
+        insert objProIT;
+        setIT.add(objProIT);        
+        
+        Attachment attach2 = new Attachment();     
+        attach2.Name='Test Attachment';
+        Blob bodyBlob2=Blob.valueOf('Test Attachment Body');
+        attach2.body=bodyBlob2;
+        attach2.parentId=objProIT.id;  
+        lstAttachIT.add(attach2);
+        
+        trgAttachmentHandler.countNumberOfQuotesOnNonITForm(lstAttachNonIT );
+        trgAttachmentHandler.countNumberOfQuotesOnITForm(lstAttachIT );
+    }
+}
