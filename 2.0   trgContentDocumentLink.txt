@@ -1,0 +1,66 @@
+trigger trg_ContentDocumentLink on ContentDocumentLink (before insert, after insert, after delete, after undelete) 
+{
+    System.debug('1. ** Hello trigger.isDelete = '+trigger.isDelete);
+    try{
+        if(trigger.isAfter && (trigger.isDelete || trigger.isUndelete || trigger.isInsert))
+        {
+            System.debug('2. ** trigger.isDelete = '+trigger.isDelete);
+            List<ContentDocumentLink> newDoc = trigger.isDelete ? trigger.old : trigger.new;
+            System.debug(newDoc);
+            ContentDocumentLink_Handler.DocfileCount(newDoc);
+        } 
+        
+        if(Trigger.isAfter && Trigger.isDelete)
+        {
+            System.debug('8. ** After Deleting ARF trigger.isDelete = '+trigger.isDelete);
+            List<ContentDocumentLink> oldDoc = trigger.old;
+            System.debug(oldDoc);
+          //  ContentDocumentLink_Handler.DeletingARFAttach(oldDoc); 
+        }
+        if(trigger.isAfter && (trigger.isDelete || trigger.isUndelete || trigger.isInsert))
+        {
+            System.debug('3. ** trigger.isDelete = '+trigger.isDelete);
+            List<ContentDocumentLink> newDoc = trigger.isDelete ? trigger.old : trigger.new;
+            System.debug(newDoc);
+            ContentDocumentLink_Handler.DocfileCountforRRFForm(newDoc);
+            
+            /* Applied 1 Attachment Validation on Asset Requistion Form and storing the link of attachment in a field */
+            System.debug(' 5. ** Firing Trigger on Asset Req. Form ');   
+            ContentDocumentLink_Handler.DocfileCountforARFForm(newDoc);  
+            
+        } 
+        
+        if(Trigger.isInsert && Trigger.isAfter)
+        {
+            System.debug('4. ** Trigger.isInsert  : '+Trigger.isInsert+'   Trigger.isAfter  : '+Trigger.isAfter);
+            
+            ContentDocumentLink_Handler.countNumberOfAttachmentsOnSubmitReportObject(Trigger.new);
+            ContentDocumentLink_Handler.countNumberOfAttachmentsOnLeadObject(Trigger.new);
+            
+            /* ******* Ankit Attachment on Procurement Non-IT  ***************  */
+            ContentDocumentLink_Handler.countNumberOfAttachmentsOnProcurement(Trigger.new);
+            
+            //   ContentDocumentLink_Handler.updatePicklistPOAfterAttachment(Trigger.new); // ( trigger not Wroking )commented by Ankit 11 Sept 2020
+            ContentDocumentLink_Handler.updatePicklistOfContentLineItemAfterAttachment(Trigger.new);
+            
+            System.debug(' 5. ** Firing Trigger on Asset Req. Form ');
+            ContentDocumentLink_Handler.updateExternalLink(trigger.new);
+            ContentDocumentLink_Handler.updateExternalLinkOfItemDescription(trigger.new);
+            }
+        
+        if(Trigger.isBefore && Trigger.isInsert)
+        {
+            // ContentDocumentLink_Handler.countNumberOfAttachmentsOnProcurement(Trigger.new);
+            System.debug('6. ** Inside Before Insert ');
+            
+            ContentDocumentLink_Handler.beforeInsertActions(Trigger.new); 
+            ContentDocumentLink_Handler.updateCaseVisibility(trigger.new);              // Added By Ankit 27-August-2020
+            //ContentDocumentLink_Handler.countNumberOfAttachmentsOnSubmitReportObjectDelete(Trigger.old);
+        }        
+    }
+    catch(Exception ex)
+    {
+        ex.getMessage();
+        System.debug('7. ** ex.getMessage()');
+    }
+}

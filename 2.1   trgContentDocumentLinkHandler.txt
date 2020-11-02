@@ -1,0 +1,639 @@
+public class ContentDocumentLink_Handler
+{
+    // It is used to Count no of Attachment on Lead object
+    public static void DocfileCount(List<ContentDocumentLink> newDoc)
+    {
+        System.debug('Hellllllllllllll');
+        set<Id> setOfLeadId = new set<Id>();
+        List<ContentDocumentLink> lstContantDoc = new List<ContentDocumentLink>();
+        List<Lead> lstlead = new List<lead>();
+        for(ContentDocumentLink cdl : newDoc)
+        {
+            if(cdl.LinkedEntityId != null)
+            {
+                if(String.ValueOf(cdl.LinkedEntityId).contains('00Q0'))
+                {
+                    setOfLeadId.add(cdl.LinkedEntityId);
+                }
+            }
+        }
+        if(setOfLeadId != null && setOfLeadId.size() > 0)
+        {
+            //It should be a single query, use inner query.
+            lstContantDoc = [SELECT ContentDocumentId FROM ContentDocumentLink WHERE LinkedEntityId IN : setOfLeadId];   
+            lstLead = [select Id, Number_Of_Attachments__c FROM Lead WHERE Id IN : setOfLeadId];
+            System.debug('Hello'+lstContantDoc);
+            System.debug('Hello 2'+lstLead);
+            System.debug('--->'+lstContantDoc.size());
+        }
+        for(lead l : lstLead)
+        {
+            l.Number_Of_Attachments__c = lstContantDoc.size();
+        }
+        update lstLead;
+    }
+    
+    
+    //	It is used to count no of Attcahment on Resource Requisition Form	   
+    public static void DocfileCountforRRFForm(List<ContentDocumentLink> newDoc)
+    {
+        System.debug('Test');
+        set<Id> setOfRRFId = new Set<Id>();
+        List<ContentDocumentLink> lstContantDoc = new List<ContentDocumentLink>();
+        List<Resource_Requisition_FormMaster__c> lstRRF = new List<Resource_Requisition_FormMaster__c>();
+        
+        for(ContentDocumentLink cdl : newDoc)
+        {
+            if(cdl.LinkedEntityId != null)
+            {
+                if(String.ValueOf(cdl.LinkedEntityId).contains('a1C0'))
+                {
+                    setOfRRFId.add(cdl.LinkedEntityId);
+                }
+            }
+        }
+        if(setOfRRFId != null && setOfRRFId.size() > 0){
+            lstContantDoc = [SELECT ContentDocumentId FROM ContentDocumentLink WHERE LinkedEntityId IN : setOfRRFId];   
+            lstRRF = [select Id, Number_Of_Attachments__c FROM Resource_Requisition_FormMaster__c WHERE Id IN : setOfRRFId];
+            System.debug('================>'+lstRRF);
+            
+        }
+        for(Resource_Requisition_FormMaster__c l : lstRRF){
+            System.debug('-------------------In for Loop');
+            l.Number_Of_Attachments__c = lstContantDoc.size();
+        }
+        update lstRRF;
+    }
+    
+    
+    //  	It is used to count no of Attachment on Submit_Report__c object 	
+    public static void countNumberOfAttachmentsOnSubmitReportObject (List<ContentDocumentLink> lstCDLinknew)
+    {
+        System.debug('4.1 ** Handler -->> Inside After Insert ');
+        System.debug('countNumberOfAttachmentsOnSubmitReportObject  Called !');
+        
+        Set<Id> setOfSubmitReportId = new Set<Id>();
+        List<ContentDocumentLink> lstContantDoc = new List<ContentDocumentLink>();
+        for(ContentDocumentLink eachCdLink : lstCDLinknew)
+        {
+            if(eachCdLink.LinkedEntityId.getSobjectType() == Submit_Report__c.sObjectType)
+            {
+                setOfSubmitReportId.add(eachCdLink.LinkedEntityId);   
+            }
+        }
+        if(setOfSubmitReportId != null && setOfSubmitReportId.size() > 0)
+        {
+            List<Submit_Report__c> lstSubmitReportToUpdate =  new List<Submit_Report__c>();
+            
+            for(Submit_Report__c eachSubmitReport :   [SELECT Id, NumberOfAttachments__c FROM Submit_Report__c WHERE Id IN : setOfSubmitReportId])
+            {
+                if(eachSubmitReport.NumberOfAttachments__c == null)
+                {
+                    eachSubmitReport.NumberOfAttachments__c = 1;
+                }
+                else
+                {
+                    eachSubmitReport.NumberOfAttachments__c += 1;                    
+                }
+                lstSubmitReportToUpdate.add(eachSubmitReport);
+            }
+            if(lstSubmitReportToUpdate != null && lstSubmitReportToUpdate.size() > 0)
+            {
+                update lstSubmitReportToUpdate;
+            }
+        }
+    }
+    
+    
+    //  	It is used to count no of Attachment on Lead object 	
+    public static void countNumberOfAttachmentsOnLeadObject (List<ContentDocumentLink> lstCDLinknew)
+    {
+        System.debug('4.2 ** Handler -->> Inside After Insert ');
+        Set<Id> setOfLeadIds = new Set<Id>();
+        List<ContentDocumentLink> lstContantDoc = new List<ContentDocumentLink>();
+        for(ContentDocumentLink eachCdLink : lstCDLinknew)
+        {
+            System.debug('eachCdLink.LinkedEntityId  '+eachCdLink.LinkedEntityId);
+            if(eachCdLink.LinkedEntityId.getSobjectType() == Lead.sObjectType)
+            {
+                setOfLeadIds.add(eachCdLink.LinkedEntityId);   
+            }
+        }
+        System.debug('setOfLeadIds  : '+setOfLeadIds);
+        
+        if(setOfLeadIds != null && setOfLeadIds.size() > 0)
+        {
+            List<Lead> lstLeadToUpdate =  new List<Lead>();
+            
+            for(Lead eachLead : [SELECT Id, NumberOfAttachments__c FROM Lead WHERE Id IN : setOfLeadIds])
+            {
+                if(eachLead.NumberOfAttachments__c == null)
+                {
+                    eachLead.NumberOfAttachments__c = 1;
+                }
+                else
+                {
+                    eachLead.NumberOfAttachments__c += 1;                    
+                }
+                lstLeadToUpdate.add(eachLead);
+            }
+            System.debug('lstLeadToUpdate   : '+lstLeadToUpdate);
+            if(lstLeadToUpdate != null && lstLeadToUpdate.size() > 0)
+            {
+                update lstLeadToUpdate;
+            }
+        }
+    }
+    
+    
+    //   It is used to perform before Insert Actions, to check whether the No. of Attachments = 10
+    public static void beforeInsertActions(List<ContentDocumentLink> lstCDLinknew)
+    {
+        System.debug('6.2 ** Inside Before Insert ');
+        Set<Id> setOfLeadIds = new Set<Id>();
+        List<ContentDocumentLink> lstContantDoc = new List<ContentDocumentLink>();
+        Map<Id,Id> mapOfContentDocumentIdWithLinkedEntityId = new Map<Id, Id>();
+        for(ContentDocumentLink eachCdLink : lstCDLinknew)
+        {
+            System.debug('eachCdLink.LinkedEntityId  '+eachCdLink.LinkedEntityId);
+            if(eachCdLink.LinkedEntityId.getSobjectType() == Lead.sObjectType)
+            {
+                mapOfContentDocumentIdWithLinkedEntityId.put(eachCdLink.Id,eachCdLink.LinkedEntityId);
+                setOfLeadIds.add(eachCdLink.LinkedEntityId);   
+            }
+        }
+        System.debug('setOfLeadIds  : '+setOfLeadIds);
+        
+        if(setOfLeadIds != null && setOfLeadIds.size() > 0)
+        {
+            List<Lead> lstLeadToUpdate =  new List<Lead>();
+            
+            Map<Id, Lead> mapOLeads = new Map<Id, Lead> ([SELECT Id, NumberOfAttachments__c FROM Lead WHERE Id IN : setOfLeadIds]);
+            
+            for(ContentDocumentLink eachCdLink : lstCDLinknew)
+            {
+                if(eachCdLink.LinkedEntityId.getSobjectType() == Lead.sObjectType)
+                {
+                    if(mapOfContentDocumentIdWithLinkedEntityId != null && mapOfContentDocumentIdWithLinkedEntityId.size() > 0)
+                    {
+                        if(mapOLeads.get((mapOfContentDocumentIdWithLinkedEntityId.get(eachCdLink.Id))).NumberOfAttachments__c == 10)
+                        {
+                            eachCdLink.LinkedEntityId.addError('Cannot Add Attachment');
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    
+    //   It is used to count no of Attachment on Asset Requistion Form 
+    public static void countNumberOfAttachmentsOnProcurement( List<ContentDocumentLink> lstCDL )
+    {
+        System.debug('4.3 ** Handler -->> Inside After Insert ');
+        Set<Id> setOfProcIds = new Set<Id>();
+        List<ContentDocumentLink> lstContentDoc = new List<ContentDocumentLink>();
+        for(ContentDocumentLink eachCDL : lstCDL)
+        {
+            System.debug('eachCdLink.LinkedEntityId  '+eachCDL.LinkedEntityId);
+            if(eachCDL.LinkedEntityId.getSobjectType() == Product_Line_Item__c.sObjectType)
+            {
+                setOfProcIds.add(eachCDL.LinkedEntityId);   
+            }
+        }
+        System.debug('setOfProcIds  : '+setOfProcIds);
+        
+        if(setOfProcIds != null && setOfProcIds.size() > 0)
+        {
+            lstContentDoc = [SELECT ContentDocumentId FROM ContentDocumentLink WHERE LinkedEntityId IN : setOfProcIds];   
+            List<Product_Line_Item__c> lstProcurementToUpdate =  [SELECT Id, Number_of_quotes__c  FROM Product_Line_Item__c
+                                                                  WHERE Id IN : setOfProcIds] ;
+            for(Product_Line_Item__c eachPLI :  lstProcurementToUpdate)
+            {
+                eachPLI.Number_of_quotes__c = lstContentDoc.size();
+            }
+            System.debug('lstProcurementToUpdate   : '+lstProcurementToUpdate);
+            if(lstProcurementToUpdate != null && lstProcurementToUpdate.size() > 0)
+            {
+                update lstProcurementToUpdate;
+            }
+        }
+    }
+    
+    
+    /*
+
+//  It is used to update the value of PO Picklist after Attachment is Uploaded 
+public static void updatePicklistPOAfterAttachment(List<ContentDocumentLink> lstCDLinknew)
+{
+System.debug('4.4 ** Handler -->> Inside After Insert ');
+Set<Id> setOfAssetRequisitionFormIds = new Set<Id>();
+for(ContentDocumentLink eachCdLink : lstCDLinknew)
+{
+System.debug('eachCdLink.LinkedEntityId  '+eachCdLink.LinkedEntityId);
+if(eachCdLink.LinkedEntityId.getSobjectType() == Asset_Requisition_Form__c.sObjectType)
+{
+setOfAssetRequisitionFormIds.add(eachCdLink.LinkedEntityId);   
+}
+}
+System.debug('setOfAssetRequisitionFormIds  : '+setOfAssetRequisitionFormIds);
+
+if(setOfAssetRequisitionFormIds != null && setOfAssetRequisitionFormIds.size() > 0)
+{
+List<Asset_Requisition_Form__c> lstAssetRequisitionFormToUpdate =  new List<Asset_Requisition_Form__c>();
+
+for(Asset_Requisition_Form__c eachRequisitionForm :   [SELECT Id, Name, P_O_attachment__c FROM Asset_Requisition_Form__c WHERE Id IN : setOfAssetRequisitionFormIds])
+{
+eachRequisitionForm.P_O_attachment__c = 'Yes';
+lstAssetRequisitionFormToUpdate.add(eachRequisitionForm);
+}
+System.debug('lstAssetRequisitionFormToUpdate   : '+lstAssetRequisitionFormToUpdate);
+
+if(lstAssetRequisitionFormToUpdate != null && lstAssetRequisitionFormToUpdate.size() > 0)
+{
+update lstAssetRequisitionFormToUpdate;
+}
+}
+}
+*/
+    
+    
+    public static void updatePicklistOfContentLineItemAfterAttachment(List<ContentDocumentLink> lstCDLinknew)
+    {
+        System.debug('4.5 ** Handler -->> Inside After Insert ');
+        Set<Id> setOfContentLineItemIds = new Set<Id>();
+        for(ContentDocumentLink eachCdLink : lstCDLinknew)
+        {
+            System.debug('eachCdLink.LinkedEntityId  '+eachCdLink.LinkedEntityId);
+            if(eachCdLink.LinkedEntityId.getSobjectType() == CRF_Line_Item__c.sObjectType)
+            {
+                setOfContentLineItemIds.add(eachCdLink.LinkedEntityId);   
+            }
+        }
+        System.debug('setOfContentLineItemIds  : '+setOfContentLineItemIds);
+        
+        if(setOfContentLineItemIds != null && setOfContentLineItemIds.size() > 0)
+        {
+            List<CRF_Line_Item__c> lstContentLineItemToUpdate =  new List<CRF_Line_Item__c>();
+            
+            for(CRF_Line_Item__c eachLineItem :   [SELECT Id, Name, Attachment_Uploaded__c FROM CRF_Line_Item__c WHERE Id IN : setOfContentLineItemIds])
+            {
+                eachLineItem.Attachment_Uploaded__c = 'Yes';
+                lstContentLineItemToUpdate.add(eachLineItem);
+            }
+            System.debug('lstContentLineItemToUpdate   : '+lstContentLineItemToUpdate);
+            
+            if(lstContentLineItemToUpdate != null && lstContentLineItemToUpdate.size() > 0)
+            {
+                update lstContentLineItemToUpdate;
+            }
+        }
+    }
+    
+    // It is used to set the Visibility of Case object to All Users.
+    public static void updateCaseVisibility(List<ContentDocumentLink> lstCdl)
+    {
+        System.debug('6.3 ** Handler -->> Inside Before Insert ');
+        for (ContentDocumentLink cdl : lstCdl) 
+        {
+            if (cdl.LinkedEntityId.getSObjectType().getDescribe().getName() == 'Case')
+            {
+                cdl.Visibility = 'AllUsers';
+                System.debug('  Case Visibility  == ' + cdl.Visibility);
+            }
+        }
+    } 
+    
+    
+    /*
+// It is used to delete Attachmnet Url from Asset req. Form on deletion of Attachment.
+public static void DeletingARFAttach(List<ContentDocumentLink> newDoc)
+{
+System.debug(' ***  Delete ARF inside Handler ');
+set<Id> setOfARFId = new Set<Id>();
+List<ContentDocumentLink> lstContantDoc = new List<ContentDocumentLink>();    //Asset_Requisition_Form__c
+List<Asset_Requisition_Form__c> lstRRF = new List<Asset_Requisition_Form__c>();
+
+for(ContentDocumentLink cdl : newDoc)
+{
+if(cdl.LinkedEntityId != null &&  cdl.LinkedEntityId.getSObjectType() == Asset_Requisition_Form__c.sObjectType )
+{
+setOfARFId.add(cdl.LinkedEntityId);
+}System.debug('*** ========setOfARFId========>'+setOfARFId);
+}
+
+if(setOfARFId != null && setOfARFId.size() > 0)
+{
+lstContantDoc = [SELECT ContentDocumentId FROM ContentDocumentLink WHERE LinkedEntityId IN : setOfARFId];   
+lstRRF = [select Id, Num_of_Attachments__c,P_O_attachment__c,PO_Attachment_URL_By_Accounts__c FROM Asset_Requisition_Form__c WHERE Id IN : setOfARFId];
+System.debug('*** ================>'+lstRRF);
+}
+
+for(Asset_Requisition_Form__c l : lstRRF)
+{
+System.debug('-------------------In for Loop');
+l.Num_of_Attachments__c = lstContantDoc.size();
+System.debug(' *** HELLO No. of Attachments on Asset = '+l.Num_of_Attachments__c);
+if(l.Num_of_Attachments__c > 1 )
+{
+System.debug(' *** ATTACHMENT is ZERO  No. of Attachments on Asset = '+l.Num_of_Attachments__c);
+l.PO_Attachment_URL_By_Accounts__c = '';      // .addError(' Sorry, you cannot upload more than 1 attachment');
+}
+System.debug(' **** No. of Attachments on Asset = '+l.Num_of_Attachments__c);
+}
+update lstRRF;
+
+}
+*/
+    
+    // It is used to count no. of Attachmnet inside Asset Req.Form & update the Attachmnet Url in a URL field
+    public static void DocfileCountforARFForm(List<ContentDocumentLink> newDoc)
+    {
+        System.debug('Test');
+        set<Id> setOfARFId = new Set<Id>();
+        List<ContentDocumentLink> lstContantDoc = new List<ContentDocumentLink>();    //Asset_Requisition_Form__c
+        List<Asset_Requisition_Form__c> lstRRF = new List<Asset_Requisition_Form__c>();
+        
+        for(ContentDocumentLink cdl : newDoc)
+        {
+            if(cdl.LinkedEntityId != null &&  cdl.LinkedEntityId.getSObjectType() == Asset_Requisition_Form__c.sObjectType )
+            {
+                setOfARFId.add(cdl.LinkedEntityId);
+            }
+        }
+        
+        if(setOfARFId != null && setOfARFId.size() > 0)
+        {
+            lstContantDoc = [SELECT ContentDocumentId FROM ContentDocumentLink WHERE LinkedEntityId IN : setOfARFId];   
+            lstRRF = [select Id, Num_of_Attachments__c,P_O_attachment__c FROM Asset_Requisition_Form__c WHERE Id IN : setOfARFId];
+            System.debug('================>'+lstRRF);
+        }
+        
+        for(Asset_Requisition_Form__c l : lstRRF)
+        {
+            System.debug('-------------------In for Loop');
+            l.Num_of_Attachments__c = lstContantDoc.size();
+            System.debug(' ** No. of Attachments on Asset = '+l.Num_of_Attachments__c);
+            if(l.Num_of_Attachments__c > 1 )
+            {
+                System.debug(' *** No. of Attachments on Asset = '+l.Num_of_Attachments__c);
+                l.Num_of_Attachments__c.addError(' Sorry, you cannot upload more than 1 attachment');
+            }
+            System.debug(' **** No. of Attachments on Asset = '+l.Num_of_Attachments__c);
+        }
+        update lstRRF;
+        
+        // Attachment URL - saving the URL Of attcahmnent in  "PO_Attachment_URL_By_Accounts__c" field       
+        
+        System.debug(' www *** Inside update Link 1');
+        Set<String> setOfContentDocumentIds = new Set<String>();
+        Set<String> setOfSurveyResponseAnswerIds = new Set<String>();
+        Map<String,String> mapOfContentDocIdWithResponseAnswerId = new Map<String, String>();
+        
+        for(ContentDocumentLink eachCdLink : newDoc)
+        {
+            System.debug(' www *** eachCdLink.LinkedEntity.Type  : '+eachCdLink.LinkedEntity.Type);
+            System.debug(' www *** eachCdLink.LinkedEntityId    :  '+eachCdLink.LinkedEntityId);
+            setOfContentDocumentIds.add(eachCdLink.ContentDocumentId);
+            System.debug(' www *** eachCdLink.LinkedEntityId.getSobjectType()  '+eachCdLink.LinkedEntityId.getSobjectType());
+            System.debug(' www *** Asset_Requisition_Form__c.sObjectType   '+Asset_Requisition_Form__c.sObjectType);
+            if(eachCdLink.LinkedEntityId.getSobjectType() == Asset_Requisition_Form__c.sObjectType)
+            {
+                setOfSurveyResponseAnswerIds.add(eachCdLink.LinkedEntityId);
+                mapOfContentDocIdWithResponseAnswerId.put(eachCdLink.ContentDocumentId, eachCdLink.LinkedEntityId);
+            }
+        }
+        System.debug(' www *** setOfSurveyResponseAnswerIds   '+setOfSurveyResponseAnswerIds);
+        System.debug(' www *** mapOfContentDocIdWithResponseAnswerId  '+mapOfContentDocIdWithResponseAnswerId);
+        System.debug(' www *** setOfContentDocumentIds   '+setOfContentDocumentIds);
+        if(setOfContentDocumentIds != null && setOfContentDocumentIds.size() > 0)
+        {
+            List<ContentDocument> lstContentDocument = [SELECT Id, ParentId FROM ContentDocument WHERE Id IN : setOfContentDocumentIds];
+            System.debug(' www *** lstContentDocument.ParentId  '+lstContentDocument[0].ParentId);
+            
+            if(setOfSurveyResponseAnswerIds != null && setOfSurveyResponseAnswerIds.size() > 0)
+            {
+                Map<Id,Asset_Requisition_Form__c> mapOfSurveyResponseAnswers = new Map<Id,Asset_Requisition_Form__c>([SELECT Id, PO_Attachment_URL_By_Accounts__c 
+                                                                                                                      FROM Asset_Requisition_Form__c
+                                                                                                                      WHERE Id IN : setOfSurveyResponseAnswerIds]);
+                System.debug(' www *** mapOfSurveyResponseAnswers  '+mapOfSurveyResponseAnswers);
+                
+                List<ContentDistribution> lstContentDistributionToInsert = new List<ContentDistribution>();
+                for(ContentVersion eachConVersion : [SELECT Id, Title, ContentDocumentId FROM ContentVersion WHERE ContentDocumentId IN : mapOfContentDocIdWithResponseAnswerId.keySet()])
+                {
+                    ContentDistribution cd = new ContentDistribution();
+                    cd.Name = eachConVersion.Title;
+                    cd.ContentVersionId = eachConVersion.Id;
+                    cd.PreferencesAllowViewInBrowser = true;
+                    cd.PreferencesLinkLatestVersion = true;
+                    cd.PreferencesNotifyOnVisit = false;
+                    cd.PreferencesPasswordRequired = false;
+                    cd.PreferencesAllowOriginalDownload = true;
+                    lstContentDistributionToInsert.add(cd);
+                }
+                
+                if(lstContentDistributionToInsert != null && lstContentDistributionToInsert.size() > 0)
+                {
+                    insert lstContentDistributionToInsert;
+                }
+                
+                List<ContentDistribution> lstContentDistribution = [SELECT DistributionPublicUrl,ContentDocumentId FROM ContentDistribution WHERE ContentDocumentId IN : mapOfContentDocIdWithResponseAnswerId.keySet() ];
+                System.debug(' www *** lstContentDistribution   :  '+lstContentDistribution);
+                Map<String, String> mapOfContentDocumentIdWithPublicUrl = new Map<String, String>();
+                
+                for(ContentDistribution eachCD : lstContentDistribution)
+                {
+                    mapOfContentDocumentIdWithPublicUrl.put(eachCD.ContentDocumentId, eachCD.DistributionPublicUrl );
+                }
+                System.debug(' www *** mapOfContentDocumentIdWithPublicUrl  '+mapOfContentDocumentIdWithPublicUrl);
+                
+                List<Asset_Requisition_Form__c> lstSurveyResponseAsnwersToUpdate = new List<Asset_Requisition_Form__c>();
+                for(String eachCDId : mapOfContentDocIdWithResponseAnswerId.keySet())
+                {
+                    System.debug('mapOfSurveyResponseAnswers.get( mapOfContentDocIdWithResponseAnswerId.get(eachCDId))   '+mapOfSurveyResponseAnswers.get( mapOfContentDocIdWithResponseAnswerId.get(eachCDId)));
+                    Asset_Requisition_Form__c imV = mapOfSurveyResponseAnswers.get( mapOfContentDocIdWithResponseAnswerId.get(eachCDId));
+                    System.debug('mapOfContentDocumentIdWithPublicUrl.get(eachCDId)  '+mapOfContentDocumentIdWithPublicUrl.get(eachCDId));
+                    imV.PO_Attachment_URL_By_Accounts__c = mapOfContentDocumentIdWithPublicUrl.get(eachCDId);
+                    System.debug(' www *** HELLO *** mapOfContentDocumentIdWithPublicUrl.get(eachCDId)  '+mapOfContentDocumentIdWithPublicUrl.get(eachCDId));
+                    lstSurveyResponseAsnwersToUpdate.add(imV);
+                }
+                
+                if(lstSurveyResponseAsnwersToUpdate != null && lstSurveyResponseAsnwersToUpdate.size() > 0 )
+                {
+                    update lstSurveyResponseAsnwersToUpdate;
+                }  
+            }
+        } 
+    }  
+    
+    
+    public static void updateExternalLinkOfItemDescription(List<ContentDocumentLink> newDoc)    //Public_Quote_URL__c  Item_Description__c
+    {
+        System.debug(' www *** Inside update Link 1');
+        Set<String> setOfContentDocumentIds = new Set<String>();
+        Set<String> setOfSurveyResponseAnswerIds = new Set<String>();
+        Map<String,String> mapOfContentDocIdWithResponseAnswerId = new Map<String, String>();
+        
+        for(ContentDocumentLink eachCdLink : newDoc)
+        {
+            System.debug(' www *** eachCdLink.LinkedEntity.Type  : '+eachCdLink.LinkedEntity.Type);
+            System.debug(' www *** eachCdLink.LinkedEntityId    :  '+eachCdLink.LinkedEntityId);
+            setOfContentDocumentIds.add(eachCdLink.ContentDocumentId);
+            System.debug(' www *** eachCdLink.LinkedEntityId.getSobjectType()  '+eachCdLink.LinkedEntityId.getSobjectType());
+            System.debug(' www *** Item_Description__c.sObjectType   '+Item_Description__c.sObjectType);
+            if(eachCdLink.LinkedEntityId.getSobjectType() == Item_Description__c.sObjectType)
+            {
+                setOfSurveyResponseAnswerIds.add(eachCdLink.LinkedEntityId);
+                mapOfContentDocIdWithResponseAnswerId.put(eachCdLink.ContentDocumentId, eachCdLink.LinkedEntityId);
+            }
+        }
+        System.debug(' www *** setOfSurveyResponseAnswerIds   '+setOfSurveyResponseAnswerIds);
+        System.debug(' www *** mapOfContentDocIdWithResponseAnswerId  '+mapOfContentDocIdWithResponseAnswerId);
+        System.debug(' www *** setOfContentDocumentIds   '+setOfContentDocumentIds);
+        if(setOfContentDocumentIds != null && setOfContentDocumentIds.size() > 0)
+        {
+            List<ContentDocument> lstContentDocument = [SELECT Id, ParentId FROM ContentDocument WHERE Id IN : setOfContentDocumentIds];
+            System.debug(' www *** lstContentDocument.ParentId  '+lstContentDocument[0].ParentId);
+            
+            if(setOfSurveyResponseAnswerIds != null && setOfSurveyResponseAnswerIds.size() > 0)
+            {
+                Map<Id,Item_Description__c> mapOfSurveyResponseAnswers = new Map<Id,Item_Description__c>([SELECT Id, Public_Quote_URL__c 
+                                                                                                          FROM Item_Description__c
+                                                                                                          WHERE Id IN : setOfSurveyResponseAnswerIds]);
+                System.debug(' www *** mapOfSurveyResponseAnswers  '+mapOfSurveyResponseAnswers);
+                
+                List<ContentDistribution> lstContentDistributionToInsert = new List<ContentDistribution>();
+                for(ContentVersion eachConVersion : [SELECT Id, Title, ContentDocumentId FROM ContentVersion WHERE ContentDocumentId IN : mapOfContentDocIdWithResponseAnswerId.keySet()])
+                {
+                    ContentDistribution cd = new ContentDistribution();
+                    cd.Name = eachConVersion.Title;
+                    cd.ContentVersionId = eachConVersion.Id;
+                    cd.PreferencesAllowViewInBrowser = true;
+                    cd.PreferencesLinkLatestVersion = true;
+                    cd.PreferencesNotifyOnVisit = false;
+                    cd.PreferencesPasswordRequired = false;
+                    cd.PreferencesAllowOriginalDownload = true;
+                    lstContentDistributionToInsert.add(cd);
+                }
+                
+                if(lstContentDistributionToInsert != null && lstContentDistributionToInsert.size() > 0)
+                {
+                    insert lstContentDistributionToInsert;
+                }
+                
+                List<ContentDistribution> lstContentDistribution = [SELECT DistributionPublicUrl,ContentDocumentId FROM ContentDistribution WHERE ContentDocumentId IN : mapOfContentDocIdWithResponseAnswerId.keySet() ];
+                System.debug(' www *** lstContentDistribution   :  '+lstContentDistribution);
+                Map<String, String> mapOfContentDocumentIdWithPublicUrl = new Map<String, String>();
+                
+                for(ContentDistribution eachCD : lstContentDistribution)
+                {
+                    mapOfContentDocumentIdWithPublicUrl.put(eachCD.ContentDocumentId, eachCD.DistributionPublicUrl );
+                }
+                System.debug(' www *** mapOfContentDocumentIdWithPublicUrl  '+mapOfContentDocumentIdWithPublicUrl);
+                
+                List<Item_Description__c> lstSurveyResponseAsnwersToUpdate = new List<Item_Description__c>();
+                for(String eachCDId : mapOfContentDocIdWithResponseAnswerId.keySet())
+                {
+                    System.debug('mapOfSurveyResponseAnswers.get( mapOfContentDocIdWithResponseAnswerId.get(eachCDId))   '+mapOfSurveyResponseAnswers.get( mapOfContentDocIdWithResponseAnswerId.get(eachCDId)));
+                    Item_Description__c imV = mapOfSurveyResponseAnswers.get( mapOfContentDocIdWithResponseAnswerId.get(eachCDId));
+                    System.debug('mapOfContentDocumentIdWithPublicUrl.get(eachCDId)  '+mapOfContentDocumentIdWithPublicUrl.get(eachCDId));
+                    imV.Public_Quote_URL__c = mapOfContentDocumentIdWithPublicUrl.get(eachCDId);
+                    System.debug(' www *** HELLO *** mapOfContentDocumentIdWithPublicUrl.get(eachCDId)  '+mapOfContentDocumentIdWithPublicUrl.get(eachCDId));
+                    lstSurveyResponseAsnwersToUpdate.add(imV);
+                }
+                
+                if(lstSurveyResponseAsnwersToUpdate != null && lstSurveyResponseAsnwersToUpdate.size() > 0 )
+                {
+                    update lstSurveyResponseAsnwersToUpdate;
+                }  
+            }
+        } 
+        
+        
+    }
+    
+    
+    public static void updateExternalLink(List<ContentDocumentLink> lstCDLinknew)
+    {
+        Set<String> setOfContentDocumentIds = new Set<String>();
+        Set<String> setOfSurveyResponseAnswerIds = new Set<String>();
+        Map<String,String> mapOfContentDocIdWithResponseAnswerId = new Map<String, String>();
+        
+        for(ContentDocumentLink eachCdLink : lstCDLinknew)
+        {
+            System.debug('eachCdLink.LinkedEntity.Type  : '+eachCdLink.LinkedEntity.Type);
+            System.debug('eachCdLink.LinkedEntityId    :  '+eachCdLink.LinkedEntityId);
+            setOfContentDocumentIds.add(eachCdLink.ContentDocumentId);
+            System.debug('eachCdLink.LinkedEntityId.getSobjectType()  '+eachCdLink.LinkedEntityId.getSobjectType());
+            System.debug('Project_Survey_Response_Answer__c.sObjectType   '+Project_Survey_Response_Answer__c.sObjectType);
+            if(eachCdLink.LinkedEntityId.getSobjectType() == Project_Survey_Response_Answer__c.sObjectType)
+            {
+                setOfSurveyResponseAnswerIds.add(eachCdLink.LinkedEntityId);
+                mapOfContentDocIdWithResponseAnswerId.put(eachCdLink.ContentDocumentId, eachCdLink.LinkedEntityId);
+            }
+        }
+        System.debug('setOfSurveyResponseAnswerIds   '+setOfSurveyResponseAnswerIds);
+        System.debug('mapOfContentDocIdWithResponseAnswerId  '+mapOfContentDocIdWithResponseAnswerId);
+        System.debug('setOfContentDocumentIds   '+setOfContentDocumentIds);
+        if(setOfContentDocumentIds != null && setOfContentDocumentIds.size() > 0)
+        {
+            List<ContentDocument> lstContentDocument = [SELECT Id, ParentId FROM ContentDocument WHERE Id IN : setOfContentDocumentIds];
+            System.debug('lstContentDocument.ParentId  '+lstContentDocument[0].ParentId);
+            
+            if(setOfSurveyResponseAnswerIds != null && setOfSurveyResponseAnswerIds.size() > 0)
+            {
+                Map<Id,Project_Survey_Response_Answer__c> mapOfSurveyResponseAnswers = new Map<Id,Project_Survey_Response_Answer__c>([SELECT Id, URL_of_Attachment__c,Answer__c FROM Project_Survey_Response_Answer__c WHERE Id IN : setOfSurveyResponseAnswerIds]);
+                System.debug('mapOfSurveyResponseAnswers  '+mapOfSurveyResponseAnswers);
+                
+                List<ContentDistribution> lstContentDistributionToInsert1 = new List<ContentDistribution>();
+                for(ContentVersion eachConVersion : [SELECT Id, Title, ContentDocumentId FROM ContentVersion WHERE ContentDocumentId IN : mapOfContentDocIdWithResponseAnswerId.keySet()])
+                {
+                    ContentDistribution cd = new ContentDistribution();
+                    cd.Name = eachConVersion.Title;
+                    cd.ContentVersionId = eachConVersion.Id;
+                    cd.PreferencesAllowViewInBrowser = true;
+                    cd.PreferencesLinkLatestVersion = true;
+                    cd.PreferencesNotifyOnVisit = false;
+                    cd.PreferencesPasswordRequired = false;
+                    cd.PreferencesAllowOriginalDownload = true;
+                    lstContentDistributionToInsert1.add(cd);
+                }
+                
+                if( !Test.isRunningTest() && lstContentDistributionToInsert1 != null && lstContentDistributionToInsert1.size() > 0 )
+                {
+                    insert lstContentDistributionToInsert1;
+                }
+                
+                List<ContentDistribution> lstContentDistribution = [SELECT DistributionPublicUrl,ContentDocumentId FROM ContentDistribution WHERE ContentDocumentId IN : mapOfContentDocIdWithResponseAnswerId.keySet() ];
+                System.debug('lstContentDistribution   :  '+lstContentDistribution);
+                Map<String, String> mapOfContentDocumentIdWithPublicUrl = new Map<String, String>();
+                
+                for(ContentDistribution eachCD : lstContentDistribution)
+                {
+                    mapOfContentDocumentIdWithPublicUrl.put(eachCD.ContentDocumentId, eachCD.DistributionPublicUrl );
+                }
+                System.debug('mapOfContentDocumentIdWithPublicUrl  '+mapOfContentDocumentIdWithPublicUrl);
+                
+                List<Project_Survey_Response_Answer__c> lstSurveyResponseAsnwersToUpdate = new List<Project_Survey_Response_Answer__c>();
+                for(String eachCDId : mapOfContentDocIdWithResponseAnswerId.keySet())
+                {
+                    System.debug('mapOfSurveyResponseAnswers.get( mapOfContentDocIdWithResponseAnswerId.get(eachCDId))   '+mapOfSurveyResponseAnswers.get( mapOfContentDocIdWithResponseAnswerId.get(eachCDId)));
+                    Project_Survey_Response_Answer__c imV = mapOfSurveyResponseAnswers.get( mapOfContentDocIdWithResponseAnswerId.get(eachCDId));
+                    System.debug('mapOfContentDocumentIdWithPublicUrl.get(eachCDId)  '+mapOfContentDocumentIdWithPublicUrl.get(eachCDId));
+                    imV.URL_of_Attachment__c = mapOfContentDocumentIdWithPublicUrl.get(eachCDId);
+                    lstSurveyResponseAsnwersToUpdate.add(imV);
+                }
+                
+                if(lstSurveyResponseAsnwersToUpdate != null && lstSurveyResponseAsnwersToUpdate.size() > 0 )
+                {
+                    update lstSurveyResponseAsnwersToUpdate;
+                }
+                
+            }
+            
+        }
+    }
+    
+    /*  ***************----------------****************---------------------********************---------------------********************   */
+    
+}

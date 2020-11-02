@@ -1,0 +1,257 @@
+@isTest
+public class ContentDocumentLink_Handler_Test 
+{
+    static testMethod void UnitTest1()
+    {
+        ContentVersion cv=MasterTestUtility.getContentVersion('ABC','abc');
+        insert cv;        
+        System.assertNotEquals(null ,cv.Id);
+        ContentVersion testContent = [SELECT id, ContentDocumentId FROM ContentVersion where Id = :cv.Id];
+        
+        Lead ld1 = new Lead(Donor_Type__c='Existing',MobilePhone='8448844848',LastName='LastTest1',Company='google',
+                            Email='xyz@gmail.com',Country_Code__c='+43',Email_Domain__c='TestDomaain',Number_Of_projects__c=6);
+        insert ld1;
+        System.assertNotEquals(null ,ld1.Id);
+        
+        Milestone1_Project__c proj =MasterTestUtility.createProject('Testproject',Date.newInstance(2020,10,10),Date.newInstance(2020,11,10),'External Project');
+        insert proj;
+        System.assertNotEquals(null ,proj.Id);
+        
+        Asset_Requisition_Form__c objAssetReq =new Asset_Requisition_Form__c();
+        objAssetReq.Name='testAsset';
+        objAssetReq.Project_Department__c=proj.Id;
+        insert objAssetReq;
+        System.assertNotEquals(null ,objAssetReq.Id);
+        
+        Account objAcc =  MasterTestUtility.getAccount('Account 1');
+        insert objAcc;
+        System.assertNotEquals(null ,objAcc.Id);
+        
+        Case objCase = new Case();
+        objCase.AccountId = objAcc.Id;
+        insert objCase;
+        System.assertNotEquals(null ,objCase.Id);
+        
+        Impaneled_Vendor__c vendor =  MasterTestUtility.getVendor();     // new Impaneled_Vendor__c();
+        vendor.State__c = 'Uttar Pradesh';
+        vendor.District__c = 'Noida';
+        vendor.Reason_for_not_providing_GST_no__c = 'None ';
+        insert vendor ;
+        System.assertNotEquals(null, vendor.Id);
+        
+        Product_Line_Item__c objProjItem =new Product_Line_Item__c();
+        objProjItem.Asset_Requisition_Form__c=objAssetReq.Id;
+        objProjItem.Number_of_quotes__c=1;
+        objProjItem.Impaneled_Vendor__c = vendor.Id ;
+        insert objProjItem;
+        System.assertNotEquals(null ,objProjItem.Id);
+        
+        Resource_Requisition_FormMaster__c rrfForm = new Resource_Requisition_FormMaster__c();
+        rrfForm.Name='TestRRFForm';
+        rrfForm.Project__c=proj.Id;
+        insert rrfForm;
+        System.assertNotEquals(null ,rrfForm.Id);
+        
+        Content_Requisition_Form__c objConReForm = new Content_Requisition_Form__c();
+        objConReForm.Name='Test';
+        objConReForm.Project__c=proj.Id;
+        insert objConReForm;
+        System.assertNotEquals(null ,objConReForm.Id);
+        
+        CRF_Line_Item__c Objcrf =new CRF_Line_Item__c();
+        Objcrf.Content_Requisition_Form__c=objConReForm.Id;
+        insert Objcrf;
+        System.assertNotEquals(null ,Objcrf.Id);
+        
+        Submit_Report__c objReport = MasterTestUtility.createSubmitReport('Test Report', proj);
+        insert objReport;
+        System.assertNotEquals(null ,objReport.Id);
+        
+        Item_Description__c objItem = MasterTestUtility.getItemDescription(vendor);
+        objItem.Impaneled_Vendor__c =vendor.Id; 
+        objItem.Unit__c = '10';
+        insert objItem;
+        System.assertNotEquals(null ,objItem.Id);
+        //---------------------------------------------------------------------------------
+        
+        Project_Library__c objProjectLibrary =  MasterTestUtility.createProjectLibrary(proj);
+        insert objProjectLibrary;
+        System.assertNotEquals(null, objProjectLibrary.Id);
+        
+        Project_Library_Questions__c objProjLibQues = MasterTestUtility.createProjectLibraryQues(objProjectLibrary);
+        objProjLibQues.Project_Library__c = objProjectLibrary.Id;
+        objProjLibQues.Weight_to_Indicator__c = 0.1;
+        objProjLibQues.Question_Type__c = 'Numeric';
+        objProjLibQues.Numeric_Aggregation__c = 0;
+        insert objProjLibQues;
+        System.assertNotEquals(null, objProjLibQues.Id);
+        
+        Project_Survey_Response__c objProjectSurveyResp = MasterTestUtility.createProjectSurveyResponse(proj, objProjectLibrary);
+        objProjectSurveyResp.Project__c = proj.Id;
+        objProjectSurveyResp.Project_Library__c = objProjectLibrary.Id;
+        insert objProjectSurveyResp;
+        System.assertNotEquals(null, objProjectSurveyResp.Id);
+        
+        List<Project_Survey_Response_Answer__c> lstPSRA = new List<Project_Survey_Response_Answer__c>();
+        Project_Survey_Response_Answer__c objPSRA = MasterTestUtility.createProjectSurveyResponseAnswer(objProjectSurveyResp, objProjLibQues);
+        objPSRA.Project_Survey_Question__c = objProjLibQues.Id;
+        objPSRA.Project_Survey_Response__c = objProjectSurveyResp.Id;
+        objPSRA.Answer__c = '4';
+        insert objPSRA;
+        System.assertNotEquals(null, objPSRA.Id);
+        
+        
+        //----------------------------------------------------------------------------------
+        
+        ContentDocumentLink contentlink=new ContentDocumentLink();
+        contentlink.ShareType= 'V';
+        contentlink.LinkedEntityId = ld1.Id; 
+        contentlink.ContentDocumentId=testcontent.ContentDocumentId;
+        contentlink.Visibility = 'AllUsers';
+        insert contentlink; 
+        
+        ContentDocumentLink contentlink1=new ContentDocumentLink();
+        contentlink1.ShareType= 'V';
+        contentlink1.LinkedEntityId = rrfForm.Id; 
+        contentlink1.ContentDocumentId=testcontent.ContentDocumentId;
+        contentlink1.Visibility = 'AllUsers';
+        insert contentlink1;
+        
+        ContentDocumentLink contentlink2=new ContentDocumentLink();
+        contentlink2.ShareType= 'V';
+        contentlink2.LinkedEntityId =objAssetReq.Id;
+        contentlink2.ContentDocumentId=testcontent.ContentDocumentId;
+        contentlink2.Visibility = 'AllUsers';
+        insert contentlink2; 
+        
+        ContentDocumentLink contentlink3=new ContentDocumentLink();
+        contentlink3.ShareType= 'V';
+        contentlink3.LinkedEntityId = Objcrf.Id; 
+        contentlink3.ContentDocumentId=testcontent.ContentDocumentId;
+        contentlink3.Visibility = 'AllUsers';
+        insert contentlink3; 
+        
+        ContentDocumentLink contentlink4=new ContentDocumentLink();
+        contentlink4.ShareType= 'V';
+        contentlink4.LinkedEntityId = objProjItem.Id; 
+        contentlink4.ContentDocumentId=testcontent.ContentDocumentId;
+        contentlink4.Visibility = 'AllUsers';
+        insert contentlink4; 
+        
+        ContentDocumentLink contentlink5 = new ContentDocumentLink();
+        contentlink5.ShareType= 'V';
+        contentlink5.LinkedEntityId = objCase.Id; 
+        contentlink5.ContentDocumentId=testcontent.ContentDocumentId;
+        contentlink5.Visibility = 'AllUsers';
+        insert contentlink5; 
+        
+        ContentDocumentLink contentlink6 = new ContentDocumentLink();
+        contentlink6.ShareType= 'V';
+        contentlink6.LinkedEntityId = objReport.Id; 
+        contentlink6.ContentDocumentId=testcontent.ContentDocumentId;
+        contentlink6.Visibility = 'AllUsers';
+        insert contentlink6; 
+        
+        ContentDocumentLink contentlink7 = new ContentDocumentLink();
+        contentlink7.ShareType= 'V';
+        contentlink7.LinkedEntityId = objItem.Id; 
+        contentlink7.ContentDocumentId=testcontent.ContentDocumentId;
+        contentlink7.Visibility = 'AllUsers';
+        insert contentlink7; 
+        
+        
+        ContentDocumentLink contentlink8 = new ContentDocumentLink();
+        contentlink8.ShareType= 'V';
+        contentlink8.LinkedEntityId = objPSRA.Id; 
+        contentlink8.ContentDocumentId=testcontent.ContentDocumentId;
+        contentlink8.Visibility = 'AllUsers';
+        insert contentlink8; 
+        
+        system.debug('hjfgdjhdfbvhxvhj  '+contentlink.LinkedEntityId);
+        
+        
+        list<ContentDocumentLink> lstContent = new list<ContentDocumentLink>();
+        lstContent.add(contentlink);
+        list<ContentDocumentLink> lstContent1 = new list<ContentDocumentLink>();
+        lstContent1.add(contentlink1);
+        list<ContentDocumentLink> lstContent2 = new list<ContentDocumentLink>();
+        lstContent2.add(contentlink2);
+        list<ContentDocumentLink> lstContent3 = new list<ContentDocumentLink>();
+        lstContent3.add(contentlink3);
+        list<ContentDocumentLink> lstContent4 = new list<ContentDocumentLink>();
+        lstContent4.add(contentlink4);
+        List<ContentDocumentLink> lstContent5 = new List<ContentDocumentLink>();
+        lstContent5.add(contentlink5);
+        List<ContentDocumentLink> lstContent6 = new List<ContentDocumentLink>();
+        lstContent6.add(contentlink6);
+        List<ContentDocumentLink> lstContent7 = new List<ContentDocumentLink>();
+        lstContent7.add(contentlink7);
+        List<ContentDocumentLink> lstContent8 = new List<ContentDocumentLink>();
+        lstContent8.add(contentlink8); 
+        
+      //  ContentDocumentLink_Handler.DocfileCount(lstContent);
+        ContentDocumentLink_Handler.DocfileCountforRRFForm(lstContent1);
+        ContentDocumentLink_Handler.updatePicklistOfContentLineItemAfterAttachment(lstContent3);
+        ContentDocumentLink_Handler.countNumberOfAttachmentsOnProcurement(lstContent4);
+        ContentDocumentLink_Handler.updateCaseVisibility(lstContent5);
+        ContentDocumentLink_Handler.countNumberOfAttachmentsOnSubmitReportObject(lstContent6);
+        //  ContentDocumentLink_Handler.updateExternalLink(lstContent8);
+        
+        
+        
+    }
+    
+    static testMethod void UnitTest2()
+    {
+        ContentVersion cv=MasterTestUtility.getContentVersion('AB','ab');
+        insert cv;        
+        System.assertNotEquals(null ,cv.Id);
+        ContentVersion testContent = [SELECT id, ContentDocumentId FROM ContentVersion where Id = :cv.Id];
+        
+        Milestone1_Project__c proj =MasterTestUtility.createProject('Testproject',Date.newInstance(2020,10,10),Date.newInstance(2020,11,10),'External Project');
+        insert proj;
+        System.assertNotEquals(null ,proj.Id);
+        
+        Project_Library__c objProjectLibrary =  MasterTestUtility.createProjectLibrary(proj);
+        insert objProjectLibrary;
+        System.assertNotEquals(null, objProjectLibrary.Id);
+        
+        Project_Library_Questions__c objProjLibQues = MasterTestUtility.createProjectLibraryQues(objProjectLibrary);
+        objProjLibQues.Project_Library__c = objProjectLibrary.Id;
+        objProjLibQues.Weight_to_Indicator__c = 0.1;
+        objProjLibQues.Question_Type__c = 'Numeric';
+        objProjLibQues.Numeric_Aggregation__c = 0;
+        insert objProjLibQues;
+        System.assertNotEquals(null, objProjLibQues.Id);
+        
+        Project_Survey_Response__c objProjectSurveyResp = MasterTestUtility.createProjectSurveyResponse(proj, objProjectLibrary);
+        objProjectSurveyResp.Project__c = proj.Id;
+        objProjectSurveyResp.Project_Library__c = objProjectLibrary.Id;
+        insert objProjectSurveyResp;
+        System.assertNotEquals(null, objProjectSurveyResp.Id);
+        
+        List<Project_Survey_Response_Answer__c> lstPSRA = new List<Project_Survey_Response_Answer__c>();
+        Project_Survey_Response_Answer__c objPSRA = MasterTestUtility.createProjectSurveyResponseAnswer(objProjectSurveyResp, objProjLibQues);
+        objPSRA.Project_Survey_Question__c = objProjLibQues.Id;
+        objPSRA.Project_Survey_Response__c = objProjectSurveyResp.Id;
+        objPSRA.Answer__c = '4';
+        insert objPSRA;
+        System.assertNotEquals(null, objPSRA.Id);
+        
+        ContentDocumentLink contentlink8 = new ContentDocumentLink();
+        contentlink8.ShareType= 'V';
+        contentlink8.LinkedEntityId = objPSRA.Id; 
+        contentlink8.ContentDocumentId=testcontent.ContentDocumentId;
+        contentlink8.Visibility = 'AllUsers';
+        insert contentlink8; 
+        
+        
+        List<ContentDocumentLink> lstContent8 = new List<ContentDocumentLink>();
+        lstContent8.add(contentlink8); 
+        
+        ContentDocumentLink_Handler.updateExternalLink(lstContent8);
+        
+        
+        
+    }
+}
