@@ -1,0 +1,74 @@
+/*------------------------------------------------------------------------
+CreatedBy:   	 Ankit Gupta
+Modified By:    Ankit Gupta
+Modified Date : 02/September/2020
+Apex Class :    trgPettycashHandler
+------------------------------------------------------------------------- */
+
+
+@isTest
+public class trgPettycashHandler_Test 
+{
+    static testmethod void UnitTest1()             
+    {
+        Date date1 = Date.today().addDays(-2);
+        Date date2 = Date.today();
+        Milestone1_Project__c objProject = MasterTestUtility.createProject('Test project',date1 , date2,'External Project' );
+        insert objProject;
+        System.assertNotEquals(null, objProject.Id);
+
+        Milestone1_Expense__c objExpense = MasterTestUtility.getExpense('Test Expense');
+        objExpense.Project_Name__c = objProject.Id ;
+        objExpense.Accounts_Status__c = 'Approved';
+        insert objExpense;  
+        System.assertNotEquals(null, objExpense.Id);
+
+        Set<String> lstOfActivityCodeIds = new Set<String>();  
+
+        Test.startTest(); 
+        Activity_Code__c objActivityCode1 = MasterTestUtility.createActivityCode('ac/ac12/amazon', objProject );
+        insert objActivityCode1;
+        System.assertNotEquals(null, objActivityCode1.Id);
+
+        lstOfActivityCodeIds.add(objActivityCode1.Id);  
+
+        Activity_Code__c objActivityCode2 = MasterTestUtility.createActivityCode('ac/ac12/flipkart', objProject );
+        insert objActivityCode2;
+        System.assertNotEquals(null, objActivityCode2.Id);
+        lstOfActivityCodeIds.add(objActivityCode2.Id);    
+
+        Activity_Code__c objActivityCode3 = MasterTestUtility.createActivityCode('ac/ac12/myntra', objProject );
+        insert objActivityCode3;
+        System.assertNotEquals(null, objActivityCode3.Id);
+        lstOfActivityCodeIds.add(objActivityCode3.Id); 
+
+        Petty_Cash_Expense__c objPettyCash = MasterTestUtility.getPettyCash(objExpense);
+        objPettyCash.Bill_Date__c = date1;
+        objPettyCash.Amount__c = 5000 ;
+        objPettyCash.Activity_Code_Project__c = objActivityCode1.Id ;  
+        insert objPettyCash;    
+
+        System.assertNotEquals(null, objPettyCash.Id);
+        System.debug(' Hello ***** objPettyCash = '+objPettyCash ); 
+        
+        List<Petty_Cash_Expense__c> lstAirRail= new List<Petty_Cash_Expense__c>();
+        lstAirRail.add(objPettyCash);
+        
+        Map<id,Petty_Cash_Expense__c> oldMap = new Map<id,Petty_Cash_Expense__c>();
+        oldMap.put(objPettyCash.Id,objPettyCash);
+        System.debug(' Hello ***** oldMap = '+oldMap ); 
+        objPettyCash.Activity_Code_Project__c = objActivityCode2.Id ; 
+        update objPettyCash;
+        objPettyCash.Amount__c = 2000 ;
+        update objPettyCash;
+        objPettyCash.Activity_Code_Project__c = objActivityCode3.Id ; 
+        objPettyCash.Amount__c = 2500 ;
+        update objPettyCash;
+        
+        Map<id,Petty_Cash_Expense__c> newMap = new Map<id,Petty_Cash_Expense__c>();
+        newMap.put(objPettyCash.Id,objPettyCash);
+        System.debug(' Hello ***** newMap = '+newMap );
+        Set<String> setOfTaskId = new Set<String>();
+        Test.stopTest(); 
+    }
+}

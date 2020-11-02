@@ -1,0 +1,108 @@
+/*------------------------------------------------------------------------
+
+Test Class :   trgPettycashHandler_Test
+------------------------------------------------------------------------- */
+
+/* This trigger handler class is used for handling and storing the amount associated with Petty_Cash_Expense__c */
+
+public class trgPettycashHandler 
+{
+     /* for updating the amount after Insert/ Delete/ Undelete */
+    public static void afterInsDelUndel(List<Petty_Cash_Expense__c> newList)
+    {
+       Set<String> lstOfActivityCodeIds = new Set<String>();
+       
+        List<AggregateResult> lstOfAggregateResult = new List<AggregateResult>();
+        
+        for(Petty_Cash_Expense__c eachPetty : newList)
+        {
+           system.debug('Expense Id = '+eachPetty.Expense__c);
+            Milestone1_Expense__c exp=[select id ,Accounts_Status__c,name from Milestone1_Expense__c where id=: eachPetty.Expense__c];
+            system.debug('Account status = '+exp);
+            if(exp.Accounts_Status__c=='Approved')
+            {
+                if(eachPetty.Activity_Code_Project__c != null)                     //   Activity_Code_Project__c 
+                {
+                    lstOfActivityCodeIds.add(eachPetty.Activity_Code_Project__c); 
+                }
+            }
+        }
+        if(lstOfActivityCodeIds != null && lstOfActivityCodeIds.size() > 0){
+            aggregateSum(lstOfActivityCodeIds);
+        }
+    }
+    
+
+      /*Used for calculating the sum of Amount associated with Miscellaneous_Expenses__c */
+
+    public static Void aggregateSum(SET<String> lstOfActivityCodeIds)
+    {
+        system.debug('========'+lstOfActivityCodeIds);
+        List<Activity_Code__c> lstOfActivityCode = new List<Activity_Code__c>();
+        
+        Map<String,Decimal> mapTaskIdToAmount = new Map<String,Decimal>();
+        List<AggregateResult> lstPettyCash = [SELECT Activity_Code_Project__c,Sum(Amount__c)pc
+                                              FROM Petty_Cash_Expense__c 
+                                              WHERE Activity_Code_Project__c = : lstOfActivityCodeIds group by Activity_Code_Project__c];
+        System.debug('---------- = '+ lstPettyCash );
+       if(lstPettyCash.size()<1)
+        {
+            system.debug('null PettyCash Expense');
+            Activity_Code__c tasks = [select id ,name,Petty_Cash_Expense__c from Activity_Code__c where id=:lstOfActivityCodeIds];
+            system.debug('tsk deatil '+tasks);
+            tasks.Petty_Cash_Expense__c=0;
+            lstOfActivityCode.add(tasks);
+        }
+		
+        for(AggregateResult eachAgg : lstPettyCash)
+        {
+            mapTaskIdToAmount.put((String)eachAgg.get('Activity_Code_Project__c'),(Decimal)eachAgg.get('pc'));
+        }
+        for(String eachId :  mapTaskIdToAmount.keySet())
+        {
+            Activity_Code__c task = new Activity_Code__c();
+            task.Id = eachId;
+            task.Petty_Cash_Expense__c = mapTaskIdToAmount.get(eachId);
+            
+            System.debug('---------- = '+task.Petty_Cash_Expense__c);
+            System.debug('---------- = '+mapTaskIdToAmount.get(eachId));
+            lstOfActivityCode.add(task);
+        }
+        update lstOfActivityCode;
+    }
+    
+
+     /* for updating the amount after Update  */
+
+    public static void afterUpdate(Map<Id,Petty_Cash_Expense__c> newMap,Map<Id,Petty_Cash_Expense__c> oldMap )
+    {
+        System.debug('------------tsting Doinf0----'+oldMap);
+        Set<String> setOfTaskId = new Set<String>();
+        for(Petty_Cash_Expense__c eachPetty : newMap.values())
+        {
+            system.debug('Expense Id'+eachPetty.Expense__c);
+            Milestone1_Expense__c exp = [select id ,Accounts_Status__c,name from Milestone1_Expense__c where id=: eachPetty.Expense__c];
+            system.debug('Account status'+exp);
+            if(exp.Accounts_Status__c=='Approved')
+            {
+                if(eachPetty.Activity_Code_Project__c != oldMap.get(eachPetty.Id).Activity_Code_Project__c)
+                {
+                    setOfTaskId.add(eachPetty.Activity_Code_Project__c);
+                    setOfTaskId.add(oldMap.get(eachPetty.Id).Activity_Code_Project__c);
+                }
+                if(eachPetty.Amount__c != oldMap.get(eachPetty.Id).Amount__c)
+                {
+                    setOfTaskId.add(eachPetty.Activity_Code_Project__c);
+                }
+                if((eachPetty.Amount__c != oldMap.get(eachPetty.Id).Amount__c) && (eachPetty.Activity_Code_Project__c != oldMap.get(eachPetty.Id).Activity_Code_Project__c) ){
+                    setOfTaskId.add(eachPetty.Activity_Code_Project__c);
+                    setOfTaskId.add(oldMap.get(eachPetty.Id).Activity_Code_Project__c);
+                }
+            }
+        }
+        if(setOfTaskId != null && setOfTaskId.size() > 0)
+        {
+            aggregateSum(setOfTaskId);
+        }
+    }
+}

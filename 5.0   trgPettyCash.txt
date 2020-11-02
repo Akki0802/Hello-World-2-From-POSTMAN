@@ -1,0 +1,19 @@
+/* All Expenses are associated with Activity Code.
+  Fetching all Expenses associated with a particular Activity Code and doing the sum of "Amount__c" of All Expenses associated with 
+that Activity Code and substituing the calculated sum to the "Petty_Cash_Expense__c" field of Activity Code.
+*/
+
+
+
+trigger trgPettycash on Petty_Cash_Expense__c (after insert,after Update,after delete,after Undelete) 
+{    
+    if((trigger.isInsert || trigger.isDelete || trigger.isUndelete) && trigger.isAfter)
+    {
+        List<Petty_Cash_Expense__c> lstPettyCash = trigger.isDelete ? trigger.old : trigger.new;
+        trgPettycashHandler.afterInsDelUndel(lstPettyCash); 
+    }
+    if(trigger.isAfter && trigger.isUpdate)
+    {
+        trgPettycashHandler.afterUpdate(trigger.newMap,trigger.oldMap);
+    }
+}
