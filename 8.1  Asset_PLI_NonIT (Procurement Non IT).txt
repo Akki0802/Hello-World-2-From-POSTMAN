@@ -1,0 +1,1564 @@
+<aura:component controller = "InsertProductLineItem"  Implements="flexipage:availableForRecordHome,force:hasRecordId">
+    
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="lstProductLineItem"  type="Product_Line_Item__c[]"/>
+    <aura:attribute name="lstFileName"          type="List" default="[]"  />
+    
+    <!-- Attributes Related With Dependent Picklist --> 
+    <aura:attribute name="objDetails1" 			 type="Impaneled_Vendor__c" default="{'sobjectType' : 'Impaneled_Vendor__c'}"/>
+    <aura:attribute name="controllingFieldAP1"   type="string" default="State__c" description="store field API name of Controller field"/>
+    <aura:attribute name="dependingFieldAP1"     type="string" default="District__c" description="store field API name of dependent field"/>
+    
+    <aura:attribute name="objDetails2" 			 type="Item_Description__c" default="{'sobjectType' : 'Item_Description__c'}"/>
+    <aura:attribute name="controllingFieldAPI2"  type="string" default="Category__c" description="store field API name of Controller field"/>
+    <aura:attribute name="dependingFieldAPI2"    type="string" default="Items__c" description="store field API name of dependent field"/>
+    
+    <!-- Fetching State & CategoryItems Picklist from Apex 
+                  & from here to Child Class ,to get values of their resp.  dependent Picklist -->
+    
+    <aura:attribute name="mapOfStateDistrict"  type="Map" />
+    <aura:attribute name="mapOfCategoryItems"  type="Map" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <!--Event handler for Add and Delete Row Event which is fire from Child Component-->    
+    <aura:handler name="DeleteRowEvt" event="c:DeleteRowEvt" action="{!c.removeDeletedRow}"/>
+    <aura:handler name="AddRowEvt" event="c:AddNewRowEvt" action="{!c.addNewRow}"/> 
+    
+    <aura:attribute name="ListFileData"         type= "Object[]" />
+    <aura:attribute name="IndexOfFileUpload"    type= "Integer[]" />
+    <aura:handler name="AddNewFilesEvt" event="c:AddNewFilesEvt" action="{!c.AddNewFilesEvt}" />
+    
+    <aura:attribute name="ListFileData2"        type= "Object[]" />
+    <aura:attribute name="IndexOfFileUpload2"   type= "Integer[]" />
+    <aura:handler name="AddNewFilesEvt2" event="c:AddNewFilesEvt2" action="{!c.AddNewFilesEvt2}" />
+    
+    <aura:attribute name="ListFileData3"        type= "Object[]" />
+    <aura:attribute name="IndexOfFileUpload3"   type= "Integer[]" />
+    <aura:handler name="AddNewFilesEvt3" event="c:AddNewFilesEvt3" action="{!c.AddNewFilesEvt3}" />
+    
+    <aura:attribute name = "lstStateDistName" type = "List" />    
+    <aura:attribute name = "countAtt" type = "Decimal" />
+    <aura:attribute name = "countAtt1" type = "Integer" />
+    <aura:attribute name = "countAtt2" type = "Integer" />
+    <aura:attribute name = "countAtt3" type = "Integer" />
+    <aura:attribute name="showSpinner"   type="Boolean" default="false" />
+    
+    <aura:if isTrue="{!v.showSpinner == true}">
+         <div class="exampleHolder">
+            <lightning:spinner alternativeText="Loading" size="medium" />
+        </div>
+    </aura:if>
+    
+    <div class="slds-scrollable_x" style="height:100%; width: 100%;">
+        <table class="slds-table slds-table_bordered slds-table_cell-buffer"> 
+            <thead>
+                <tr class="slds-text-title_caps">
+                    <th scope = "col"> <div class ="slds-truncate">	S.No 	        	  </div> </th>
+                    <div class="slds-size_1-of-3">
+                        <th scope = "col"> <div class ="slds-truncate"> *State				  </div> </th>
+                    </div> 
+                    <th scope = "col"> <div class ="slds-truncate"> *District 			  </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> *Items Category 	  </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> *Items    			  </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> Other Items			  </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> Vendor Picklist       </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> Cost Per Unit Item    </div> </th>
+                    <!--  ________________________________________________________  -->	
+                    <th scope = "col"> <div class ="slds-truncate"> Vendor GST Number	  </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> Unit 				  </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> Item Specification	  </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> *Quantity 			  </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> *Budget 			      </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> Available Quote       </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> *Quote 1		          </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> *Quote 2		          </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> *Quote 3     		  </div> </th>
+                    <th scope = "col"> <div class ="slds-truncate"> Justification     	  </div> </th>  
+                    
+                </tr>
+            </thead>  
+            
+            <tbody>													<!-- Sending data to Child comp.  -->
+                <aura:iteration items="{!v.lstProductLineItem}" var="item" indexVar="index">
+                    <c:Asset_PLI_Child  objProcurement="{!item}" rowIndex="{!index}"
+                                       mapOfStateDistrict = "{!v.mapOfStateDistrict}"
+                                       mapOfCategoryItems = "{!v.mapOfCategoryItems}"  
+                                       lstStateDistName   = "{!v.lstStateDistName}"
+                                       countAtt = "{!v.countAtt}"/>
+                </aura:iteration>
+            </tbody>	
+            
+        </table>
+    </div>
+    <br/>
+    <button class="slds-button slds-button_brand" onclick="{!c.Save}">Save</button>
+</aura:component>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+({
+    doInit : function(component, event, helper) 
+    {
+        helper.doInit(component, event, helper);
+    },
+    
+    addNewRow: function(component, event, helper) 
+    {
+        helper.createObjectData(component, event);
+    },
+    
+    removeDeletedRow: function(component, event, helper) 
+    {
+        // get the selected row Index for delete, from Lightning Event Attribute  
+        var index = event.getParam("indexVar");
+        var AllRowsList = component.get("v.lstProductLineItem");
+        
+        AllRowsList.splice(index, 1);
+        component.set("v.lstProductLineItem", AllRowsList);
+    },
+    
+    /******************************************************
+    ******* SAVING PROCUREMENT NON-IT FORM ***************
+   ******************************************************/
+    
+    Save: function(component, event, helper) 
+    {
+        var lstSavePLIForm = component.get("v.lstProductLineItem"); 
+        var recTempId = component.get("v.recordId");
+        
+        function myFunction() 
+        {
+            setTimeout(function()
+                       {
+                          // alert("Hello Timeout"); 
+                           component.set("v.showSpinner",false);
+                       }, 5000);
+        }
+        
+        console.log (' @@@ lstSavePLIForm ______________+ = '+JSON.stringify(lstSavePLIForm));
+        console.log (' @@@ lstSavePLIForm ______________+ = '+lstSavePLIForm.length);
+        
+        if (helper.validateRequired(component, event))  // calling helper method to check for validations
+        {
+            if( helper.countAttachments(component, event, helper ) )  // calling helper method to count Attachment validations
+            {   
+                 component.set("v.showSpinner",true);
+                let saveAction = component.get("c.saveProductLineItems");
+                saveAction.setParams({
+                    lstProductLineItem  : lstSavePLIForm
+                });
+                saveAction.setCallback(this, function(response) {
+                    let state = response.getState();
+                    if(state == "SUCCESS")
+                    {
+                        console.log("Huraaah Success");      
+                        var lstSavedProductId = response.getReturnValue();
+                        console.log('--- Return Product Line Items Id as values ***** : = '+JSON.stringify(lstSavedProductId));
+                        
+                        //____________________________________________________________________________________________________________
+                        //  Calling uploader func. in Helper Class for Attachment 1
+                        
+                        var lstRec = component.get("v.lstProductLineItemNonIT");   // ANonymous
+                        var fileVal = component.get("v.ListFileData");
+                        var unique = component.get("v.IndexOfFileUpload");
+                        
+                        for ( var i = 0; i < lstSavedProductId.length; i++) 
+                        {
+                            if(unique.indexOf(i) !== -1)
+                            {
+                                var fileName = fileVal[i];
+                                var parentId = lstSavedProductId[i];
+                                helper.uploadHelper(component, event,fileName,parentId);
+                                
+                            }
+                        }
+                        //________________________________________________________________________________________
+                        // 		 Calling uploader func. in Helper Class for Attachment 2
+                        
+                        var lstRec2 = component.get("v.lstProductLineItemIT2");   // ANonymous
+                        var fileVal2 = component.get("v.ListFileData2");
+                        var unique2 = component.get("v.IndexOfFileUpload2");
+                        
+                        for ( var j = 0; j < lstSavedProductId.length; j++) 
+                        {
+                            if(unique.indexOf(j) !== -1)
+                            {
+                                var fileName2 = fileVal2[j];
+                                var parentId2 = lstSavedProductId[j];
+                                helper.uploadHelper2(component, event,fileName2,parentId2);
+                            }
+                        }
+                        //____________________________________________________________________________________________________________
+                        //		Calling uploader func. in Helper Class for Attachment 3
+                        
+                        var lstRec3 = component.get("v.lstProductLineItemIT3");   // ANonymous
+                        //console.log(' 107 *************** Anonymous 3  lstProductLineItemIT3 = '+JSON.stringify(lstProductLineItemIT3)); 
+                        var fileVal3 = component.get("v.ListFileData3");
+                        var unique3 = component.get("v.IndexOfFileUpload3");
+                        
+                        
+                        for ( var k = 0; k < lstSavedProductId.length; k++) 
+                        {
+                            if(unique.indexOf(k) !== -1)
+                            {
+                                var fileName3 = fileVal3[k];
+                                var parentId3 = lstSavedProductId[k];
+                                helper.uploadHelper3(component, event,fileName3,parentId3);
+                            }
+                        }                            
+                        //_________________________________________________________________________________________________
+                     let blankList = [];                
+                      var RowItemList = component.get("v.lstProductLineItem");
+                    blankList.push({
+                        'sobjectType': 'Product_Line_Item__c',
+                        'Products_Services_Name__c': '',
+                        'Items__c': '',
+                        'Others__c' : '',
+                        'Product_Service__c' : '' ,
+                        'Asset_Requisition_Form__c' : recTempId,
+                        'Impaneled_Vendor__c' : '',
+                        'Budget__c': '' ,
+                        'Quantity__c': '',
+                        'State__c': '',
+                        'District__c': '',
+                        'Per_Unit_Cost__c': '',
+                        'Unit__c': '',
+                        'Justification__c': ''
+                       // 'Number_of_quotes__c' : countAtt
+                    });
+                    
+                    // component.set("v.RowItemList",blankList);
+                                    
+                                    
+                        myFunction();
+                       component.set("v.lstSavePLIForm",[]);
+                        
+                        let toastEvent = $A.get("e.force:showToast");
+                        if(toastEvent)
+                        {
+                            toastEvent.setParams({
+                                "type" : "success",
+                                "message" : "Procurement Non- IT record saved successfully !"
+                            });
+                            toastEvent.fire();
+                            component.set("v.lstProductLineItem",blankList);
+                            
+                            //component.set("v.lstSavePLIForm",[]);
+                            
+                            // helper.uploadNoOfQuotes(component,controller,helper);
+                           // window.location.reload();
+                           
+                            
+                        }
+                        else
+                            alert('Procurement Non- IT record saved successfully');
+                        
+                    }
+                    else if(state == "INCOMPLETE")
+                    {
+                        
+                    }
+                        else if(state == "ERROR")
+                        {
+                            console.log('Errror  '+JSON.stringify(response.getError()));   
+                        }
+                });
+                $A.enqueueAction(saveAction);
+            }
+        } 
+        //***************************************
+        
+    },
+    
+    
+    AddNewFilesEvt : function(component, event,helper)
+    {
+        var val = event.getParam("currentfileName");
+        var IndexNumber = event.getParam("IndexNumber");
+        console.log(' 107 ************************  file 1 = '+val +' IndexNumber1  ==  '+IndexNumber);
+        
+        var lstOfFile = component.get("v.ListFileData");
+        console.log('Fisrt get File Array data'+lstOfFile.length);
+        
+        lstOfFile[IndexNumber] = val; 
+        component.set("v.ListFileData",lstOfFile);
+        
+        var test = component.get("v.ListFileData");
+        var uploadIndexes = component.get("v.IndexOfFileUpload");
+        uploadIndexes.push(IndexNumber);
+        component.set("v.IndexOfFileUpload", uploadIndexes);
+        
+        var uniqueIndex = [];
+        for(var i=0; i < uploadIndexes.length; i++){
+            if(uniqueIndex.indexOf(uploadIndexes[i]) === -1) 
+            {
+                uniqueIndex.push(uploadIndexes[i]);
+            }
+        }
+        console.log('Testing'+uniqueIndex);
+        component.set("v.IndexOfFileUpload",uniqueIndex);
+    },
+    
+    AddNewFilesEvt2 : function(component, event,helper)
+    {
+        var val2 = event.getParam("currentfileName2");
+        var IndexNumber2 = event.getParam("IndexNumber2");
+        console.log(' 107 ************************  file 2 = '+val2 +' IndexNumber2  ==  '+IndexNumber2);
+        
+        var lstOfFile2 = component.get("v.ListFileData2");
+        console.log('Fisrt get File Array data'+lstOfFile2.length);
+        
+        lstOfFile2[IndexNumber2] = val2; 
+        component.set("v.ListFileData2",lstOfFile2);
+        
+        var test = component.get("v.ListFileData2");
+        var uploadIndexes2 = component.get("v.IndexOfFileUpload2");
+        uploadIndexes2.push(IndexNumber2);
+        component.set("v.IndexOfFileUpload2", uploadIndexes2);
+        
+        var uniqueIndex2 = [];
+        for(var i=0; i < uploadIndexes2.length; i++){
+            if(uniqueIndex2.indexOf(uploadIndexes2[i]) === -1) 
+            {
+                uniqueIndex2.push(uploadIndexes2[i]);
+            }
+        }
+        console.log('Testing'+uniqueIndex2);
+        component.set("v.IndexOfFileUpload2",uniqueIndex2);
+    },
+    
+    
+    /* ***************************************************************************************************************************
+    ********************************************************************************************************************************
+    *************************************************************************************************************************************/
+    AddNewFilesEvt3 : function(component, event,helper)
+    {
+        var val3 = event.getParam("currentfileName3");
+        var IndexNumber3 = event.getParam("IndexNumber3");
+        console.log(' 107 ************************  file 3 = '+val3 +' IndexNumber3  ==  '+IndexNumber3);
+        
+        var lstOfFile3 = component.get("v.ListFileData3");
+        console.log('Fisrt get File Array data'+lstOfFile3.length);
+        
+        lstOfFile3[IndexNumber3] = val3; 
+        component.set("v.ListFileData3",lstOfFile3);
+        
+        var test = component.get("v.ListFileData3");
+        var uploadIndexes3 = component.get("v.IndexOfFileUpload3");
+        uploadIndexes3.push(IndexNumber3);
+        component.set("v.IndexOfFileUpload3", uploadIndexes3);
+        
+        var uniqueIndex3 = [];
+        for(var i=0; i < uploadIndexes3.length; i++){
+            if(uniqueIndex3.indexOf(uploadIndexes3[i]) === -1) 
+            {
+                uniqueIndex3.push(uploadIndexes3[i]);
+            }
+        }
+        console.log('Testing'+uniqueIndex3);
+        component.set("v.IndexOfFileUpload3",uniqueIndex3);
+    }
+    
+    
+    
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+({
+    doInit :function(component, event, helper ) 
+    {
+        var recordId  = component.get('v.recordId');
+        console.log(' Quotes ******* record Id of Asset' + recordId);
+        let objDetails1 	 = component.get("v.objDetails1");
+        let controllerField1 = component.get("v.controllingFieldAP1");
+        let dependentField1  = component.get("v.dependingFieldAP1");
+        
+        let objDetails2 	 = component.get("v.objDetails2");
+        let controllerField2 = component.get("v.controllingFieldAPI2");
+        let dependentField2  = component.get("v.dependingFieldAPI2");
+        
+        var action = component.get("c.getInitialPicklistValues");
+        action.setParams({
+            'objDetails1' : objDetails1,
+            'controllerField1': controllerField1,
+            'dependentField1': dependentField1,
+            'objDetails2' : objDetails2,
+            'controllerField2': controllerField2,
+            'dependentField2': dependentField2 
+        });
+        action.setCallback(this, function(response) {
+            if (response.getState() == "SUCCESS") 
+            {
+                var mapOfPicklistValues = response.getReturnValue();
+                console.log('\n mapOfPicklistValues = \n '+ JSON.stringify(mapOfPicklistValues)); 
+                
+                if(!$A.util.isEmpty(mapOfPicklistValues) && !$A.util.isUndefined(mapOfPicklistValues))
+                {
+                    console.log('OKOKOK  ');
+                    component.set('v.mapOfStateDistrict',mapOfPicklistValues.mapOfStatesWithListOfDistrict);
+                    component.set('v.mapOfCategoryItems',mapOfPicklistValues.mapOfItemsCategoryWithListOfItems);
+                    
+                    let mapOfStateDistrict  = component.get('v.mapOfStateDistrict');
+                    let mapOfCategoryItems  = component.get('v.mapOfCategoryItems');
+                    
+                    console.log('mapOfStateDistrict  : '+JSON.stringify(mapOfStateDistrict));
+                    console.log('mapOfCategoryItems  : '+JSON.stringify(mapOfCategoryItems));
+                    helper.createObjectData(component, event); 
+                }
+            }
+            else
+            {   
+                let errors = response.getError();
+                alert('Something went wrong \n\n  errors  '+JSON.stringify(errors));
+            }
+        });
+        $A.enqueueAction(action);
+    },
+    
+    
+    createObjectData : function(component, event ) 
+    { 
+        var lstStateDistName = component.get('v.lstStateDistName');
+        lstStateDistName.push({
+            'index'   : '',
+            'state'   : '',
+            'district': '',
+            'category' : '',
+            'item' :'',
+            'vendor' : '',
+            'attach1' :'' ,
+            'attach2' :'' ,
+            'attach3' :'' 
+        })
+        component.set('v.lstStateDistName',lstStateDistName);
+        
+        var recTempId = component.get("v.recordId");
+        console.log('Hello'+recTempId);
+        
+        var countAtt = component.get('v.countAtt');
+        var RowItemList = component.get("v.lstProductLineItem");
+        RowItemList.push({
+            'sobjectType': 'Product_Line_Item__c',
+            'Products_Services_Name__c': '',
+            'Items__c': '',
+            'Others__c' : '',
+            'Product_Service__c' : '' ,
+            'Asset_Requisition_Form__c' : recTempId,
+            'Impaneled_Vendor__c' : '',
+            'Budget__c': '' ,
+            'Quantity__c': '',
+            'State__c': '',
+            'District__c': '',
+            'Per_Unit_Cost__c': '',
+            'Unit__c': '',
+            'Justification__c': '',
+            'Number_of_quotes__c' : countAtt
+        });
+        console.log(' @@@ RowItemList = '+JSON.stringify(RowItemList));
+        component.set("v.lstProductLineItem", RowItemList);
+    },
+    
+    validateRequired: function(component, event) 
+    {
+        
+        var lstStateDistName = component.get('v.lstStateDistName');
+        console.log('lstStateDistName   :'+JSON.stringify(lstStateDistName));
+        
+        var isValid = true;
+        var allContactRows = component.get("v.lstProductLineItem");
+        for (var indexVar = 0; indexVar < allContactRows.length; indexVar++) 
+        {
+            
+            if (lstStateDistName[indexVar].state == '' || lstStateDistName[indexVar].state == null )      /*___ Validation on state ___ */
+            {
+                isValid = false;
+                let toastEvent = $A.get('e.force:showToast');
+                if (toastEvent)
+                {
+                    toastEvent.setParams({ 'type'  : 'error', 
+                                          'message': 'Please fill State at  Row '  + (indexVar + 1)
+                                         }).fire();
+                } 
+                else  {	 alert(' State cannot be blank at  Row '  + (indexVar + 1));   
+                      } 
+                return;
+            }      
+            
+            if (lstStateDistName[indexVar].district == '' || lstStateDistName[indexVar].district == null )    /*___ Validation on state ___ */
+            {
+                isValid = false;
+                let toastEvent = $A.get('e.force:showToast');
+                if (toastEvent)
+                {
+                    toastEvent.setParams({ 'type'  : 'error', 
+                                          'message': 'Please fill District at  Row '  + (indexVar + 1)
+                                         }).fire();
+                } 
+                else  {	 alert(' District cannot be blank at  Row '  + (indexVar + 1));   
+                      } 
+                return;
+            }
+            
+            if (lstStateDistName[indexVar].category == '' || lstStateDistName[indexVar].category == null )     /*___ Validation on state ___ */
+            {
+                isValid = false;
+                let toastEvent = $A.get('e.force:showToast');
+                if (toastEvent)
+                {
+                    toastEvent.setParams({ 'type'  : 'error', 
+                                          'message': 'Please fill Item Category at  Row '  + (indexVar + 1)
+                                         }).fire();
+                } 
+                else  {	 alert('Please fill Item Category at  Row '  + (indexVar + 1));   
+                      } 
+                return;
+            }      
+            
+            if (lstStateDistName[indexVar].item == '' || lstStateDistName[indexVar].item == null ) 
+            {
+                isValid = false;
+                let toastEvent = $A.get('e.force:showToast');
+                if (toastEvent)
+                {
+                    toastEvent.setParams({ 'type'  : 'error', 
+                                          'message': 'Please fill Item at  Row '  + (indexVar + 1)
+                                         }).fire();
+                } 
+                else  {	 alert(' Item cannot be blank at  Row '  + (indexVar + 1));   
+                      } 
+                return;
+            }
+            
+            if (lstStateDistName[indexVar].vendor == '' || lstStateDistName[indexVar].vendor == null ) 
+            {
+                isValid = false;
+                let toastEvent = $A.get('e.force:showToast');
+                if (toastEvent)
+                {
+                    toastEvent.setParams({ 'type'  : 'error', 
+                                          'message': 'Please fill Vendor at  Row '  + (indexVar + 1)
+                                         }).fire();
+                } 
+                else  {	 alert(' Vendor cannot be blank at  Row '  + (indexVar + 1));   
+                      } 
+                return;
+            }
+            
+            
+            if (allContactRows[indexVar].Product_Service__c == '' || allContactRows[indexVar].Product_Service__c == null )    /*___ Validation on Budget ___ */
+            {
+                isValid = false;
+                let toastEvent = $A.get('e.force:showToast');
+                if (toastEvent)
+                {
+                    toastEvent.setParams({ 'type'  : 'error', 
+                                          'message': 'Please fill Item Specification at  Row '  + (indexVar + 1)
+                                         }).fire();
+                } 
+                else  {	 alert('Please fill Item Specification at  Row '  + (indexVar + 1));   
+                      } 
+                return isValid;
+            }
+            
+            if (allContactRows[indexVar].Quantity__c == '' ) // || lstStateDistName[indexVar].Quantity__c == null )    /*___ Validation on Quantity ___ */
+            {
+                isValid = false;
+                let toastEvent = $A.get('e.force:showToast');
+                if (toastEvent)
+                {
+                    toastEvent.setParams({ 'type'  : 'error', 
+                                          'message': 'Please fill Quantity at  Row '  + (indexVar + 1)
+                                         }).fire();
+                } 
+                else  {	 alert(' Quantity cannot be blank at  Row '  + (indexVar + 1));   
+                      } 
+                return;
+            }   
+            
+            if (allContactRows[indexVar].Quantity__c < 0 || allContactRows[indexVar].Quantity__c > 10000000 )    /*___ Validation on Budget ___ */
+            {
+                isValid = false;
+                let toastEvent = $A.get('e.force:showToast');
+                if (toastEvent)
+                {
+                    toastEvent.setParams({ 'type'  : 'error', 
+                                          'message': 'Please fill Quantity between the given range of 1 -1 crore INR. at  Row '  + (indexVar + 1)
+                                         }).fire();
+                } 
+                else  {	 alert(' Please fill Quantity between the given range of 1 -1 crore INR. at  Row '  + (indexVar + 1));   
+                      } 
+                return isValid;
+            }
+            
+            if (allContactRows[indexVar].Budget__c == '' || allContactRows[indexVar].Budget__c == null )    /*___ Validation on Budget ___ */
+            {
+                console.log('// Inside Null Budget');
+                isValid = false;
+                let toastEvent = $A.get('e.force:showToast');
+                if (toastEvent)
+                {
+                    toastEvent.setParams({ 'type'  : 'error', 
+                                          'message': 'Budget cannot be Null, please fill Budget at  Row '  + (indexVar + 1)
+                                         }).fire();
+                } 
+                else  {	 alert(' Budget cannot be blank at  Row '  + (indexVar + 1));   
+                      } 
+                return isValid;
+            }
+            
+            if (allContactRows[indexVar].Budget__c < 0 || allContactRows[indexVar].Budget__c > 10000000 )    /*___ Validation on Budget ___ */
+            {
+                console.log('// Inside Wrong Limit of  Budget');
+                isValid = false;
+                let toastEvent = $A.get('e.force:showToast');
+                if (toastEvent)
+                {
+                    toastEvent.setParams({ 'type'  : 'error', 
+                                          'message': 'Please fill Budget between the given range of 1 -1 crore INR. at  Row '  + (indexVar + 1)
+                                         }).fire();
+                } 
+                else  {	 alert(' Please fill Budget between the given range of 1 -1 crore INR. at  Row '  + (indexVar + 1));   
+                      } 
+                return isValid;
+            }
+            
+            if ( allContactRows[indexVar].Justification__c == ''  &&  (   lstStateDistName[indexVar].attach1 == '' 
+                                                                       ||   lstStateDistName[indexVar].attach2 == '' || lstStateDistName[indexVar].attach3 == '' 
+                                                                       || ( lstStateDistName[indexVar].attach1 == '' && lstStateDistName[indexVar].attach2 == '' )  
+                                                                       || ( lstStateDistName[indexVar].attach2 == '' && lstStateDistName[indexVar].attach3 == '' ) 
+                                                                       || ( lstStateDistName[indexVar].attach1 == '' && lstStateDistName[indexVar].attach3 == '' )
+                                                                       || (lstStateDistName[indexVar].attach1 == '' &&lstStateDistName[indexVar].attach2 == '' &&lstStateDistName[indexVar].attach3 == '') ) ) 
+            {
+                isValid = false;
+                let toastEvent = $A.get('e.force:showToast');
+                if (toastEvent)
+                {
+                    toastEvent.setParams({ 'type'  : 'error', 
+                                          'message': 'Please fill Justification because you have not uploaded Attachments on all Quotes at Row'  + (indexVar + 1)
+                                         }).fire();
+                    
+                }
+                else  {	 alert(' Justification cannot be blank at  Row '  + (indexVar + 1));   
+                      } 
+                return;
+            }
+            
+        }
+        return isValid;
+    },
+    
+    /***********************************************************************
+    		 ********** validation on Attachment  **************
+   *********************************************************************  */ 
+    
+    countAttachments: function(component, event, helper)
+    {
+        var lstOfFile  = component.get("v.ListFileData");
+        var lstOfFile2 = component.get("v.ListFileData2");
+        var lstOfFile3 = component.get("v.ListFileData3");
+        
+        
+        var len1 = lstOfFile.length ;
+        var len2 = lstOfFile2.length ;
+        var len3 = lstOfFile3.length ;
+        
+        console.log( 'countAtt 125 ***** Lengths of All 3 files are ==  ****** ==  '+len1 +' == '+ len2+' == '+len3);
+        var countAtt = (len1 + len2 + len3) ;
+        
+        if (countAtt == 3)
+        {
+            console.log('Quotes ****** 125 ****** countAtt = '+ countAtt  );
+        }
+        else if (countAtt == 2)
+        {
+            console.log('Quotes ***** 125 ****** countAtt = '+ countAtt  );
+        }
+        else if (countAtt == 1)
+        {
+            console.log('Quotes ***** 125 ****** countAtt = '+ countAtt  );
+        }
+        else if (countAtt == 0) 
+        {
+         countAtt = countAtt + 0.1;
+         console.log('********* 125 ****** countAtt = '+ countAtt  );
+        }
+        component.set('v.countAtt', countAtt);
+        console.log('Quotes ---- component.set("v.countAtt"): ' + component.set('v.countAtt'));
+       // component.set('v.NoOfAttachments', )
+    //    helper.uploadNoOfQuotes(component,controller,helper);
+        return countAtt;
+    },   
+    
+    
+    uploadHelper: function(component, event,fileName,parentId) 
+    {
+    var countAttachments = component.get('v.countAtt') ;
+        console.log('countAttachments = '+ countAttachments);
+        var getAssetId = component.get('v.recordId');
+        console.log(' getAssetId = '+ getAssetId);
+        
+        if( typeof(countAttachments) != 'undefined' && countAttachments != null && typeof(getAssetId) != 'undefined' && getAssetId != null  )
+        {
+            var uploadQuote = component.get('c.saveNoOfQuotesInAssetReqForm');
+        	
+        uploadQuote.setParams({
+            
+        });
+        
+        }
+        
+    },
+    
+
+    
+    MAX_FILE_SIZE: 100000000, //Max file size 4.5 MB 
+    CHUNK_SIZE: 750000,      //Chunk Max size 750 KB 
+    
+    uploadHelper: function(component, event,fileName,parentId) 
+    {
+        console.log('107 ******** Inside upload Helper 1.0');
+        var file = fileName;
+        
+        if( file != '' || file != undefined)
+        {
+            console.log('testtttttttt'+file.type);
+            console.log('107 Hello   ******** 1 ********* '+file.type + ' file name  = = ' + file);
+            var self = this;
+            if (file.size > self.MAX_FILE_SIZE)
+            {
+                component.set("v.fileName", 'Alert : File size cannot exceed ' + self.MAX_FILE_SIZE + ' bytes.\n' + ' Selected file size: ' + file.size);
+                return;
+            }
+            var objFileReader = new FileReader();
+            console.log('objFileReader');
+            
+            objFileReader.onload = $A.getCallback(function() {
+                console.log('yaha to aa jao');
+                var fileContents = objFileReader.result;
+                var base64 = 'base64,';
+                var dataStart = fileContents.indexOf(base64) + base64.length;
+                
+                fileContents = fileContents.substring(dataStart);
+                self.uploadProcess(component, file, fileContents,parentId);
+            });
+            // console.log('Ab yaha bhi aa gya');
+            objFileReader.readAsDataURL(file);
+        }
+    },
+    
+    uploadProcess: function(component, file, fileContents,parentId) 
+    {
+        console.log('107 ******** Inside upload Helper 1.1');
+        // console.log('Thank god yaha to aay mai finally');
+        var startPosition = 0;
+        var endPosition = Math.min(fileContents.length, startPosition + this.CHUNK_SIZE);
+        console.log('777777777777777777777'+endPosition);
+        this.uploadInChunk(component, file, fileContents, startPosition, endPosition, '',parentId);
+    },
+    
+    uploadInChunk: function(component, file, fileContents, startPosition, endPosition, attachId,parentId) 
+    {
+        console.log('107 ******** Inside upload Helper 1.2');
+        console.log('Hello1'+file.type);
+        
+        // call the apex method 'saveChunk'
+        var getchunk = fileContents.substring(startPosition, endPosition);
+        var action = component.get("c.saveChunk");
+        action.setParams({
+            parentId: parentId,
+            fileName: file.name,
+            base64Data: encodeURIComponent(getchunk),
+            contentType: file.type,
+            fileId: attachId
+        });
+        
+        
+        action.setCallback(this, function(response) {
+            attachId = response.getReturnValue();
+            console.log('Return final Id  1'+attachId);
+            var state = response.getState();
+            if (state === "SUCCESS") {
+                console.log('All done brother');
+                
+                startPosition = endPosition;		 
+                endPosition = Math.min(fileContents.length, startPosition + this.CHUNK_SIZE);
+                
+                if (startPosition < endPosition)
+                {		 console.log('107 ******** Inside upload Helper 1.3 ** self recursion');
+                 this.uploadInChunk(component, file, fileContents, startPosition, endPosition, attachId);
+                } else {
+                }
+                
+            } else if (state === "INCOMPLETE") {
+                alert("From server: " + response.getReturnValue());
+            } else if (state === "ERROR") {
+                var errors = response.getError();
+                if (errors) {
+                    if (errors[0] && errors[0].message) {
+                        alert("Error message: " + errors[0].message);
+                    }
+                } else {
+                    
+                }
+            } 
+        });
+        
+        $A.enqueueAction(action);
+    },
+    
+    /*  **********************************************************************************************************************
+        ************************************************************************************************************************
+           *************************************************************************************************************************/
+    
+    uploadHelper2: function(component, event,fileName2,parentId2) 
+    {
+        console.log('107 ******** Inside upload Helper 2.0 ');
+        // console.log('testtttttttt'+fileName2.type);
+        var file = fileName2;
+        
+        //  if( file != '' || file != undefined)
+        if(!$A.util.isEmpty(file) && !$A.util.isUndefined(file))
+        {
+            console.log('testtttttttt'+file.type);
+            console.log('107 Hello   ********  2 ********* '+file.type + ' file name 2 = = ' + file);
+            var self = this;
+            
+            if (file.size > self.MAX_FILE_SIZE)
+            {
+                component.set("v.fileName2", 'Alert : File size cannot exceed ' + self.MAX_FILE_SIZE + ' bytes.\n' + ' Selected file size: ' + file.size);
+                return;
+            }
+            
+            var objFileReader = new FileReader();
+            console.log('objFileReader');
+            
+            objFileReader.onload = $A.getCallback(function() {
+                console.log('yaha to aa jao');
+                var fileContents = objFileReader.result;
+                var base64 = 'base64,';
+                var dataStart = fileContents.indexOf(base64) + base64.length;
+                
+                fileContents = fileContents.substring(dataStart);
+                self.uploadProcess2(component, file, fileContents,parentId2);
+            });
+            console.log('Ab yaha bhi aa gya');
+            objFileReader.readAsDataURL(file);
+        }
+    },
+    
+    uploadProcess2: function(component, file, fileContents,parentId2) 
+    {
+        console.log('107 ******** Inside upload Helper 2.1');
+        console.log('Thank god yaha to aay mai finally');
+        var startPosition = 0;
+        var endPosition = Math.min(fileContents.length, startPosition + this.CHUNK_SIZE);
+        console.log('777777777777777777777'+endPosition);
+        this.uploadInChunk2(component, file, fileContents, startPosition, endPosition, '',parentId2);
+    },
+    
+    uploadInChunk2: function(component, file, fileContents, startPosition, endPosition, attachId,parentId2) 
+    {
+        console.log('107 ******** Inside upload Helper 2.2');
+        console.log('Hello1'+file.type);
+        
+        // call the apex method 'saveChunk2'
+        var getchunk = fileContents.substring(startPosition, endPosition);
+        var action2 = component.get("c.saveChunk2");
+        action2.setParams({
+            parentId: parentId2,
+            fileName: file.name,
+            base64Data: encodeURIComponent(getchunk),
+            contentType: file.type,
+            fileId: attachId
+        });
+        
+        
+        action2.setCallback(this, function(response) {
+            attachId = response.getReturnValue();
+            console.log('Return final Id  2'+attachId);
+            var state = response.getState();
+            if (state === "SUCCESS") {
+                console.log('All done brother 2' );
+                
+                startPosition = endPosition;		 
+                endPosition = Math.min(fileContents.length, startPosition + this.CHUNK_SIZE);
+                
+                if (startPosition < endPosition)
+                {console.log('107 ******** Inside upload Helper 2.3');
+                 this.uploadInChunk2(component, file, fileContents, startPosition, endPosition, attachId);
+                } else {
+                }
+                
+            } else if (state === "INCOMPLETE") {
+                alert("From server: " + response.getReturnValue());
+            } else if (state === "ERROR") {
+                var errors = response.getError();
+                if (errors) {
+                    if (errors[0] && errors[0].message) {
+                        alert("Error message: " + errors[0].message);
+                    }
+                } else {
+                    
+                }
+            } 
+        });
+        
+        $A.enqueueAction(action2);
+    },
+    
+    /* .**********************************************************************************************************************
+        ************************************************************************************************************************
+         1 *************************************************************************************************************************/
+    uploadHelper3: function(component, event,fileName3,parentId3) 
+    {
+        console.log('107 ******** Inside upload Helper 3.0');
+        //console.log('testtttttttt'+fileName3.type);
+        var file3 = fileName3;
+        //   if( file3 != '' || file3 != undefined)								
+        if(!$A.util.isEmpty(file3) && !$A.util.isUndefined(file3))
+        {   console.log('107 Hello   ******** 3 ********* '+file3.type + ' file name 3 = = ' + file3);
+         var self = this;
+         
+         if (file3.size > self.MAX_FILE_SIZE)
+         {
+             component.set("v.fileName3", 'Alert : File size cannot exceed ' + self.MAX_FILE_SIZE + ' bytes.\n' + ' Selected file3size: ' + file3.size);
+             return;
+         }
+         var objFileReader = new FileReader();
+         console.log('objFileReader');
+         
+         objFileReader.onload = $A.getCallback(function() {
+             console.log('yaha to aa jao');
+             var fileContents = objFileReader.result;
+             var base64 = 'base64,';
+             var dataStart = fileContents.indexOf(base64) + base64.length;
+             
+             fileContents = fileContents.substring(dataStart);
+             self.uploadProcess3(component, file3, fileContents,parentId3);
+         });
+         console.log('Ab yaha bhi aa gya');
+         objFileReader.readAsDataURL(file3);
+        }
+    },
+    
+    uploadProcess3: function(component, file3, fileContents,parentId3) 
+    {
+        console.log('107 ******** Inside upload Helper 3.1');
+        console.log('Thank god yaha to aay mai finally');
+        var startPosition = 0;
+        var endPosition = Math.min(fileContents.length, startPosition + this.CHUNK_SIZE);
+        console.log('777777777777777777777'+endPosition);
+        this.uploadInChunk3(component, file3, fileContents, startPosition, endPosition, '',parentId3);
+    },
+    
+    uploadInChunk3: function(component, file3, fileContents, startPosition, endPosition, attachId,parentId3) 
+    {
+        console.log('107 ******** Inside upload Helper 3.2');
+        console.log('Hello1'+file3.type);
+        
+        // call the apex method 'saveChunk3'
+        var getchunk = fileContents.substring(startPosition, endPosition);
+        var action3 = component.get("c.saveChunk3");
+        action3.setParams({
+            parentId: parentId3,
+            fileName: file3.name,
+            base64Data: encodeURIComponent(getchunk),
+            contentType: file3.type,
+            fileId: attachId
+        });
+        
+        
+        action3.setCallback(this, function(response) {
+            attachId = response.getReturnValue();
+            console.log('Return final Id  3'+attachId);
+            var state = response.getState();
+            if (state === "SUCCESS") {
+                console.log('All done brother  3');
+                
+                startPosition = endPosition;		 
+                endPosition = Math.min(fileContents.length, startPosition + this.CHUNK_SIZE);
+                
+                if (startPosition < endPosition)
+                {    console.log('107 ******** Inside upload Helper 3.3');
+                 this.uploadInChunk3(component, file3, fileContents, startPosition, endPosition, attachId);
+                } else {
+                }
+                
+            } else if (state === "INCOMPLETE") {
+                alert("From server: " + response.getReturnValue());
+            } else if (state === "ERROR") {
+                var errors = response.getError();
+                if (errors) {
+                    if (errors[0] && errors[0].message) {
+                        alert("Error message: " + errors[0].message);
+                    }
+                } else {
+                    
+                }
+            } 
+        });
+        
+        $A.enqueueAction(action3);
+    }
+    
+    
+    
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+public class InsertProductLineItem 
+{
+    /* __________  PROCUREMENT - IT   _______________ */
+    @AuraEnabled
+    public static List<String> saveProductLineItemsIT(List<Product_Line_Item_IT__c> lstProductLineItem)
+    {										
+        System.debug('lstProductLineItem');
+        Database.insert(lstProductLineItem) ;
+        
+        List<String> lstProductLineItemsID = new List<String>();
+        for(Product_Line_Item_IT__c eachItem : lstProductLineItem)
+        {
+            lstProductLineItemsID.add(eachItem.Id);   
+        }
+        return lstProductLineItemsID;
+    }
+    
+    /* __________  PROCUREMENT  NON - IT   _______________ */
+    @AuraEnabled
+    public static List<String> saveProductLineItems(List<Product_Line_Item__c> lstProductLineItem)
+    {										
+        System.debug('lstProductLineItem');
+        Database.insert(lstProductLineItem) ;
+        
+        List<String> lstProductLineItemsID_NonIT = new List<String>();
+        for(Product_Line_Item__c eachItem : lstProductLineItem)
+        {
+            lstProductLineItemsID_NonIT.add(eachItem.Id);   
+        }
+        
+        return lstProductLineItemsID_NonIT;
+    }
+    
+    /* __________  fetch Vendors IT  &  NON -IT   Using Wrapper Class _______________ */
+    @AuraEnabled
+    public static List<WrapperClass> fetchVendors (String state,  String district,  String category,  String item )
+    {
+        System.debug('state  '+state+' district  :  '+district+' category  : '+category+' item  : '+item);
+        
+        List<WrapperClass> lstWrapper = new List<WrapperClass>();
+        Set<Id> setOfVendorsId = new Set<Id>();        
+        
+        for(Impaneled_Vendor__c eachImp :  [SELECT Id, State__c , District__c 
+                                            FROM Impaneled_Vendor__c 
+                                            WHERE State__c =: state  
+                                            AND  District__c =: district ])
+        {
+            setOfVendorsId.add(eachImp.Id);  
+        }
+        
+        System.debug('setOfVendorsId  '+setOfVendorsId);
+        
+        List<Item_Description__c> lstItems = [SELECT Id, Category__c , Items__c, Per_Unit_Cost__c ,Unit__c, Impaneled_Vendor__r.Id ,
+                                              Impaneled_Vendor__r.Vendor_Name__c,Impaneled_Vendor__r.GST_No__c 
+                                              FROM Item_Description__c 
+                                              WHERE Category__c =:category   AND Items__c =: item 
+                                              AND Impaneled_Vendor__c IN: setOfVendorsId ];
+        
+        System.debug('lstItems  : '+lstItems);
+        
+        for( Item_Description__c eachItem : lstItems )
+        {
+            WrapperClass objWrap = new WrapperClass();
+            objWrap.ItemId      = eachItem.Id;
+            objWrap.VendorName  = eachItem.Impaneled_Vendor__r.Vendor_Name__c;
+            objWrap.VendorId    = eachItem.Impaneled_Vendor__r.Id;
+            objWrap.GstNo       = eachItem.Impaneled_Vendor__r.GST_No__c;
+            objWrap.PerUnitCost = eachItem.Per_Unit_Cost__c;
+            objWrap.Unit  = eachItem.Unit__c;
+            lstWrapper.add(objWrap);
+        }
+        system.debug('lstWrapper    :  '+lstWrapper);
+        return lstWrapper;
+    }
+    
+    @TestVisible    
+    Class WrapperClass				// WRAPPER CLASS TO STORE THE VALUES OBTAINED FROM QUERY 
+    {
+        @AuraEnabled public String  ItemId;
+        @AuraEnabled public String  VendorId;
+        @AuraEnabled public String  VendorName;
+        @AuraEnabled public String  GstNo ;
+        @AuraEnabled public Decimal PerUnitCost;
+        @AuraEnabled public String Unit;
+        public WrapperClass()
+        {
+            ItemId = null ;
+            VendorId = null;
+            VendorName = null;
+            VendorId = GstNo;
+            PerUnitCost = 0.0;
+            Unit = null ;
+        }
+    }
+    
+    
+    //________________________________________________________________________________________________________________________________________________________________
+    @AuraEnabled 
+    public static InitialDataWrapper getInitialPicklistValues(sObject objDetails1, String controllerField1, String dependentField1,sObject objDetails2, String controllerField2, String dependentField2)
+    {
+        
+        System.debug('objDetail1  : '+objDetails1+' controllerField1 : '+controllerField1+'  dependentField1  : '+dependentField1);
+        System.debug('objDetail2  : '+objDetails2+' controllerField2 : '+controllerField2+'  dependentField2  : '+dependentField2);
+        
+        InitialDataWrapper objInitialDataWrapper = new InitialDataWrapper();
+        objInitialDataWrapper.mapOfStatesWithListOfDistrict = getDependentMapFM (objDetails1, controllerField1, dependentField1);
+        objInitialDataWrapper.mapOfItemsCategoryWithListOfItems = getDependentMapFM (objDetails2, controllerField2, dependentField2);
+        
+        return objInitialDataWrapper;
+        
+    }
+    
+    //______________________________________________________________________________________________________________________________________
+    
+    // Fetching a Controller Picklist ( Parent )  & its Dependent Picklist (Child )........
+    @AuraEnabled 
+    public static Map<String, List<String>> getDependentMapFM(sObject objDetail, string contrfieldApiName,string depfieldApiName)
+    {
+        String controllingField = contrfieldApiName.toLowerCase();
+        String dependentField = depfieldApiName.toLowerCase();
+        
+        Map<String,List<String>> objResults = new Map<String,List<String>>();
+        
+        Schema.sObjectType objType = objDetail.getSObjectType();
+        if (objType==null){
+            return objResults;
+        }
+        
+        Map<String, Schema.SObjectField> objFieldMap = objType.getDescribe().fields.getMap();
+        
+        if (!objFieldMap.containsKey(controllingField) || !objFieldMap.containsKey(dependentField)){
+            return objResults;     
+        }
+        
+        Schema.SObjectField theField = objFieldMap.get(dependentField);
+        Schema.SObjectField ctrlField = objFieldMap.get(controllingField);
+        
+        List<Schema.PicklistEntry> contrEntries = ctrlField.getDescribe().getPicklistValues();
+        List<PicklistEntryWrapper> depEntries = wrapPicklistEntries(theField.getDescribe().getPicklistValues());
+        List<String> controllingValues = new List<String>();
+        
+        for (Schema.PicklistEntry ple : contrEntries) {
+            String label = ple.getLabel();
+            objResults.put(label, new List<String>());
+            controllingValues.add(label);
+        }
+        
+        for (PicklistEntryWrapper plew : depEntries) {
+            String label = plew.label;
+            String validForBits = base64ToBits(plew.validFor);
+            for (Integer i = 0; i < validForBits.length(); i++) {
+                String bit = validForBits.mid(i, 1);
+                if (bit == '1') {
+                    objResults.get(controllingValues.get(i)).add(label);
+                }
+            }
+        }
+        return objResults;
+    }
+    
+    public static String decimalToBinary(Integer val) {
+        String bits = '';
+        while (val > 0) {
+            Integer remainder = Math.mod(val, 2);
+            val = Integer.valueOf(Math.floor(val / 2));
+            bits = String.valueOf(remainder) + bits;
+        }
+        return bits;
+    }
+    
+    public static String base64ToBits(String validFor) {
+        if (String.isEmpty(validFor)) return '';
+        
+        String validForBits = '';
+        
+        for (Integer i = 0; i < validFor.length(); i++) {
+            String thisChar = validFor.mid(i, 1);
+            Integer val = base64Chars.indexOf(thisChar);
+            String bits = decimalToBinary(val).leftPad(6, '0');
+            validForBits += bits;
+        }
+        
+        return validForBits;
+    }
+    
+    private static final String base64Chars = '' +
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
+        'abcdefghijklmnopqrstuvwxyz' +
+        '0123456789+/';
+    
+    private static List<PicklistEntryWrapper> wrapPicklistEntries(List<Schema.PicklistEntry> PLEs) 
+    {
+        return (List<PicklistEntryWrapper>)
+            JSON.deserialize(JSON.serialize(PLEs), List<PicklistEntryWrapper>.class);
+    }
+    
+    public class PicklistEntryWrapper{
+        public String active {get;set;}
+        public String defaultValue {get;set;}
+        public String label {get;set;}
+        public String value {get;set;}
+        public String validFor {get;set;}
+        public PicklistEntryWrapper(){            
+        }
+        
+    }
+    
+    //This Wrapper class is storing two maps within a single map ,
+    // i.e  -->  MapOfListOfStateDistrict   &   --> MapOfListOfCategory&Items
+    public class InitialDataWrapper
+    {
+        @AuraEnabled public Map<String, List<String>> mapOfStatesWithListOfDistrict;
+        @AuraEnabled public Map<String, List<String>> mapOfItemsCategoryWithListOfItems;   
+        
+        public InitialDataWrapper()
+        {
+            mapOfStatesWithListOfDistrict = new Map<String, List<String>>();
+            mapOfItemsCategoryWithListOfItems = new Map<String, List<String>>();
+        }
+    }
+    
+    //__________________________________________________________________________________________________________________________________________________________
+    
+    @AuraEnabled
+    public static List<Item_Description__c> getQuoteAttachment(String selectedItemDescriptionId)
+    {
+        System.debug('----- selectedItemDescriptionId: ' + selectedItemDescriptionId);
+        
+        List<Item_Description__c> lstItemDescription = [SELECT Id, Name, Public_Quote_URL__c,
+                                                        (SELECT Id, LinkedEntityId, ContentDocumentId, ContentDocument.Title 
+                                                         FROM ContentDocumentLinks WHERE ContentDocumentId != : null
+                                                         ORDER BY ContentDocument.CreatedDate DESC LIMIT 1)
+                                                        FROM Item_Description__c
+                                                        WHERE  Id = :selectedItemDescriptionId];
+        
+        System.debug('---- lstItemDescription: ' + lstItemDescription);
+        
+        if(lstItemDescription != null && lstItemDescription.size() > 0)
+        {
+            return lstItemDescription;
+        }
+        
+        return null;
+    }
+    
+    
+    /*  ***************************	SAVING MULTIPLE ATTACHMENTS	*****************************************   */ 
+    
+    @AuraEnabled									// 1  ** SAVE ATTACHED FILE NO.1  INTO SALESFORCE
+    public static Id saveChunk(Id parentId, String fileName, String base64Data, String contentType, String fileId) 
+    {
+        // check if fileId id ''(Always blank in first chunk), then call the saveTheFile method,
+        //  which is save the check data and return the attachemnt Id after insert, 
+        //  next time (in else) we are call the appentTOFile() method
+        //   for update the attachment with reamins chunks   
+        if (fileId == '') 
+        {
+            fileId = saveTheFile(parentId, fileName, base64Data, contentType);
+        }   else {
+            appendToFile(fileId, base64Data);
+        }
+        return Id.valueOf(fileId);
+    }
+    
+    public static Id saveTheFile(Id parentId, String fileName, String base64Data, String contentType) 
+    {
+        base64Data = EncodingUtil.urlDecode(base64Data, 'UTF-8');
+        
+        System.debug('******************parentId 1 = = '+parentId);
+        System.debug('****************fileName 1 = = '+fileName);
+        System.debug('*********************contentType 1 = = '+contentType);
+        Attachment oAttachment = new Attachment();
+        oAttachment.parentId = parentId;
+        oAttachment.Body = EncodingUtil.base64Decode(base64Data);
+        oAttachment.Name = fileName;
+        oAttachment.ContentType = contentType;
+        insert oAttachment;
+        System.debug('Id Only 1 = = '+oAttachment.Id);
+        return oAttachment.Id;
+    }
+    
+    private static void appendToFile(Id fileId, String base64Data) 
+    {
+        base64Data = EncodingUtil.urlDecode(base64Data, 'UTF-8');
+        System.debug('Hello friendz  1 = = ');
+        Attachment a = [SELECT Id, Body FROM Attachment WHERE Id = :fileId];
+        String existingBody = EncodingUtil.base64Encode(a.Body);
+        
+        a.Body = EncodingUtil.base64Decode(existingBody + base64Data);
+        update a;
+    }
+    //___________________________________________________________________________________________________________________________________
+    
+    @AuraEnabled									//2  ** SAVE ATTACHED FILE NO.2  INTO SALESFORCE
+    public static Id saveChunk2(Id parentId, String fileName, String base64Data, String contentType, String fileId) 
+    {
+        // check if fileId id ''(Always blank in first chunk), then call the saveTheFile method,
+        //  which is save the check data and return the attachemnt Id after insert, 
+        //  next time (in else) we are call the appentTOFile() method
+        //   for update the attachment with reamins chunks   
+        if (fileId == '') 
+        {
+            fileId = saveTheFile2(parentId, fileName, base64Data, contentType);
+        }   else {
+            appendToFile2(fileId, base64Data);
+        }
+        return Id.valueOf(fileId);
+    }
+    
+    public static Id saveTheFile2(Id parentId, String fileName, String base64Data, String contentType) 
+    {
+        base64Data = EncodingUtil.urlDecode(base64Data, 'UTF-8');
+        
+        System.debug('******************parentId 2 = = '+parentId);
+        System.debug('****************fileName 2 = = '+fileName);
+        System.debug('*********************contentType 2 = = '+contentType);
+        Attachment oAttachment = new Attachment();
+        oAttachment.parentId = parentId;
+        
+        oAttachment.Body = EncodingUtil.base64Decode(base64Data);
+        oAttachment.Name = fileName;
+        oAttachment.ContentType = contentType;
+        
+        insert oAttachment;
+        System.debug('Id Only 2 = = '+oAttachment.Id);
+        return oAttachment.Id;
+    }
+    
+    private static void appendToFile2(Id fileId, String base64Data) 
+    {
+        base64Data = EncodingUtil.urlDecode(base64Data, 'UTF-8');
+        System.debug('Hello friendz 2 = = ');
+        Attachment a = [SELECT Id, Body FROM Attachment WHERE Id = :fileId];
+        String existingBody = EncodingUtil.base64Encode(a.Body);
+        
+        a.Body = EncodingUtil.base64Decode(existingBody + base64Data);
+        update a;
+    }
+    //___________________________________________________________________________________________________________________________
+    
+    @AuraEnabled									// 3  ** SAVE ATTACHED FILE NO.3  INTO SALESFORCE
+    public static Id saveChunk3(Id parentId, String fileName, String base64Data, String contentType, String fileId) 
+    {
+        // check if fileId id ''(Always blank in first chunk), then call the saveTheFile method,
+        //  which is save the check data and return the attachemnt Id after insert, 
+        //  next time (in else) we are call the appentTOFile() method
+        //   for update the attachment with reamins chunks   
+        if (fileId == '') 
+        {
+            fileId = saveTheFile3(parentId, fileName, base64Data, contentType);
+        }   else {
+            appendToFile3(fileId, base64Data);
+        }
+        return Id.valueOf(fileId);
+    }
+    
+    public static Id saveTheFile3(Id parentId, String fileName, String base64Data, String contentType) 
+    {
+        base64Data = EncodingUtil.urlDecode(base64Data, 'UTF-8');
+        
+        System.debug('******************parentId 3 = = '+parentId);
+        System.debug('****************fileName 3 = = '+fileName);
+        System.debug('*********************contentType  3 = = '+contentType);
+        Attachment oAttachment = new Attachment();
+        oAttachment.parentId = parentId;
+        
+        oAttachment.Body = EncodingUtil.base64Decode(base64Data);
+        oAttachment.Name = fileName;
+        oAttachment.ContentType = contentType;
+        
+        insert oAttachment;
+        System.debug('Id Only  3 = = '+oAttachment.Id);
+        return oAttachment.Id;
+    }
+    
+    private static void appendToFile3(Id fileId, String base64Data) 
+    {
+        base64Data = EncodingUtil.urlDecode(base64Data, 'UTF-8');
+        System.debug('Hello friendz 3 = = ');
+        
+        Attachment a = [SELECT Id, Body FROM Attachment WHERE Id = :fileId];
+        
+        String existingBody = EncodingUtil.base64Encode(a.Body);
+        a.Body = EncodingUtil.base64Decode(existingBody + base64Data);
+        update a;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+@isTest
+public class InsertProductLineItem_Test 
+{
+    
+    static testMethod void unitTest1()
+    {
+        Date date1 = Date.today().addDays(-2);
+        Date date2 = Date.today();
+        
+        Milestone1_Project__c objProject = MasterTestUtility.createProject('Test project',date1 , date2,'Internal Project' );
+        insert objProject;
+        System.assertNotEquals(null, objProject.Id);
+        
+        Asset_Requisition_Form__c objReqForm = MasterTestUtility.getAssetForm('Test Asset 1', objProject);
+     //   objReqForm.Manager_Email__c = 'Test@gmail.com'; 
+        insert objReqForm; 
+        System.assertNotEquals(null, objReqForm.Id);
+        
+        Set<Id> setOfVendorsId = new Set<Id>();
+        Impaneled_Vendor__c vendor =  MasterTestUtility.getVendor();     // new Impaneled_Vendor__c();
+        vendor.State__c = 'Uttar Pradesh';
+        vendor.District__c = 'Noida';
+        vendor.Reason_for_not_providing_GST_no__c = 'None ';
+        insert vendor ;
+        System.assertNotEquals(null, vendor.Id);
+        setOfVendorsId.add(vendor.Id);
+        
+        List<Product_Line_Item__c> lstProductLineItem = new List<Product_Line_Item__c>();
+        Product_Line_Item__c objProduct = MasterTestUtility.getProductLineItem_NonIt(objReqForm);
+        objProduct.Impaneled_Vendor__c = vendor.Id;
+        objProduct.Quantity__c=5;
+        lstProductLineItem.add(objProduct);
+        
+        List<String> lstProduct1 = InsertProductLineItem.saveProductLineItems(lstProductLineItem);    //m2
+        Product_Line_Item_IT__c objProductIT = MasterTestUtility.getProductLineItem_IT(objReqForm);   //new Product_Line_Item_IT__c();
+        objProductIT.Quantity__c=5;
+        List<Product_Line_Item_IT__c> lstProductLineItemIT = new List<Product_Line_Item_IT__c>();
+        lstProductLineItemIT.add(objProductIT);
+        List<String> lstProduct2 = InsertProductLineItem.saveProductLineItemsIT(lstProductLineItemIT); //m1
+        
+        Item_Description__c item =  new Item_Description__c();  // MasterTestUtility.getItemDescription(vendor) ; // 
+        item.Category__c = 'Stationery';
+        item.Items__c = 'Pencil';
+        item.Unit__c = '10';
+        item.Impaneled_Vendor__c = vendor.Id;
+        insert item;
+        System.assertNotEquals(null, item.Id);
+        
+        List<InsertProductLineItem.WrapperClass> lstImpVendor =  InsertProductLineItem.fetchVendors('Uttarakhand', 'Pithoragarh', 'Stationary', 'Pencil');			//m3
+        InsertProductLineItem.getInitialPicklistValues(item, 'Category__c', 'Items__c', vendor, 'State__c', 'District__c');   //m5
+        InsertProductLineItem.getDependentMapFM( item, 'Uttarakhand', 'Pithoragarh');				 // m6
+        
+        string fileId1 =InsertProductLineItem.saveChunk(objProject.Id, 'fileName',' base64Data', 'Text','');      //m7 
+        string fileId2 =InsertProductLineItem.saveChunk(objProject.Id, 'fileName',' base64Data', 'Text',fileId1);
+        string fileId3 =InsertProductLineItem.saveChunk2(objProject.Id, 'fileName',' base64Data', 'Text','');      //m7 
+        string fileId4 =InsertProductLineItem.saveChunk2(objProject.Id, 'fileName',' base64Data', 'Text',fileId3);
+        string fileId5 =InsertProductLineItem.saveChunk3(objProject.Id, 'fileName',' base64Data', 'Text','');      //m7 
+        string fileId6 =InsertProductLineItem.saveChunk3(objProject.Id, 'fileName',' base64Data', 'Text',fileId5);
+        
+        InsertProductLineItem.WrapperClass objWrap = new InsertProductLineItem.WrapperClass();
+        objWrap.GstNo = '1023654789' ;
+        objWrap.ItemId   = 'a1V0p0000009Xt6EAE' ;
+        objWrap.PerUnitCost = 10.0 ;
+        objWrap.Unit = '10';
+        objWrap.VendorId = 'a1V0p10108922745AF' ;
+        objWrap.VendorName = 'Ankit';
+        List<Item_Description__c> itemxx = InsertProductLineItem.getQuoteAttachment(item.Id);
+    }
+    
+    
+}

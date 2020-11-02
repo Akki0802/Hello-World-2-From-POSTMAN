@@ -1,0 +1,863 @@
+<aura:component  controller="InsertProductLineItem" >
+    <aura:attribute name="objProcurement" 		type="Product_Line_Item__c"/>
+    <aura:attribute name="rowIndex" 			type="String" />
+    
+    <!--<aura:attribute name="contentDocumentLink"  type="ContentDocumentLink"/>-->
+    <aura:attribute name="availableQuoteLink" type="String"/>
+    
+    <aura:attribute name="lstStates"           type="List" default="[]" />	<!--  From Parent Class via MAP , Values of States -->
+    <aura:attribute name="lstDistricts"        type="List" default="[]" />
+    <aura:attribute name="lstCategoryItems"    type="List" default="[]" />  <!--  From Parent Class via MAP , Values Of Cate.. Items -->
+    <aura:attribute name="lstItems"            type="List" default="[]" />
+    <aura:attribute name="mapOfStateDistrict"  type="Map" />
+    <aura:attribute name="mapOfCategoryItems"  type="Map" />
+    <aura:attribute name="lstVendors"   	   type="List" default="[]" />
+    
+    <!--  List to add other fields in a List just Like in objProcurement , for adding validations   -->
+    <aura:attribute name = "lstStateDistName"   type = "List" />     
+    <aura:attribute name ="wrapperList"    type ="InsertProductLineItem.WrapperClass[]"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>	
+    
+    <!-- Register Lightning Events for handling Add or Delete rows on Parent Component  --> 
+    
+    <aura:registerEvent name="DeleteRowEvt"    type="c:DeleteRowEvt"  /> 
+    <aura:registerEvent name="AddRowEvt"       type="c:AddNewRowEvt"  />        
+    <aura:registerEvent name="AddNewFilesEvt"  type="c:AddNewFilesEvt" />
+    <aura:registerEvent name="AddNewFilesEvt2" type="c:AddNewFilesEvt2" />
+    <aura:registerEvent name="AddNewFilesEvt3" type="c:AddNewFilesEvt3" />
+    
+    <aura:attribute name="lstFileName"          type="List" default="[]"  />
+    <aura:attribute name="lstFileName2"         type="List" default="[]" />
+    <aura:attribute name="lstFileName3"         type="List" default="[]" />
+    <aura:attribute name = "countAtt" type = "Decimal" />   
+   <!--  Table Row -->   
+    
+    <tr class="slds-text-title_caps">
+        
+        <td>  {!v.rowIndex + 1}		</td>
+        <td>
+            <lightning:select aura:id="stateId" value="{!v.objProcurement.State__c}" onchange="{!c.onStateChange}">
+                <option value="">-- None --</option>  
+                <aura:iteration items="{!v.lstStates}" var="eachState">
+                    <option value="{!eachState}">{!eachState}</option>
+                </aura:iteration>
+            </lightning:select>	    
+        </td> 
+        
+        <td>
+            <lightning:select aura:id="districtId" value="{!v.objProcurement.District__c}" disabled="true" onchange="{!c.onDistrictChange}" >
+                <option value="">-- None --</option>
+                <aura:iteration items="{!v.lstDistricts}" var="eachDistrict">
+                    <option value="{!eachDistrict}">{!eachDistrict}</option>
+                </aura:iteration>
+            </lightning:select>         
+        </td>  
+        
+        <td>  
+            <lightning:select  aura:id= "categoryItemsId" value = "{!v.objProcurement.Products_Services_Name__c}" onchange="{!c.onCategoryItemsChange}">
+                <option value="">None</option>
+                <aura:iteration items="{!v.lstCategoryItems}" var="eachCategory">
+                    <option value="{!eachCategory}">{!eachCategory}</option>
+                </aura:iteration>
+            </lightning:select>			
+        </td>
+        
+        <td>      
+            <lightning:select  aura:id= "itemsId"  value = "{!v.objProcurement.Items__c}" disabled="true"  onchange = "{!c.onItemChange}"> 
+                <option value="">None</option>
+                <aura:iteration items="{!v.lstItems}" var="eachItem">
+                    <option value="{!eachItem}">{!eachItem}</option>
+                </aura:iteration>
+            </lightning:select>    
+        </td>
+        
+        <td size="3">
+            <ui:inputText  aura:id="otherItems" class="slds-input" value="{!v.objProcurement.Others__c}" disabled = "true"/>        </td>
+        
+        <td size="3">
+            <lightning:select  aura:id= "vendorsId" value="{!v.objProcurement.Impaneled_Vendor__c}"  disabled="false" onchange="{!c.onVendorChange}">
+                <option value=""> - None - </option>   
+                <aura:iteration items="{!v.lstVendors}" var="eachVendor">
+                    <option value="{!eachVendor.VendorId}" > {!eachVendor.VendorName}</option>
+                </aura:iteration>
+            </lightning:select>    
+        </td>
+        <!-- __________     	-->
+        <td size="3">
+            <lightning:input type="number" disabled="true" aura:id="costPerUnit" value="{!v.objProcurement.Per_Unit_Cost__c}"/>
+        </td>  
+        <!-- __________    -->
+        <td size="3">
+            <lightning:input type="text" disabled="true" aura:id="vendorGstno" />
+        </td> 									
+        <td size="3">
+            <lightning:input type="text" disabled="true" aura:id="unit" value="{!v.objProcurement.Unit__c}" />
+        </td> 
+        <!-- _______________________  -->
+        <td size="3">
+            <ui:inputText  class="slds-input" aura:id="itemSpecification" value="{!v.objProcurement.Product_Service__c}" disabled="false" />   
+        </td>
+        <td size="3">
+            <ui:inputNumber  class="slds-input"  aura:id="quantity" value="{!v.objProcurement.Quantity__c}" disabled="false" />        
+        </td>
+        <td size="3">
+            <ui:inputCurrency class="slds-input"  aura:id="budget" value="{!v.objProcurement.Budget__c}" disabled="false" />        
+        </td>
+        <td >
+            <!--<lightning:fileCard fileId="{!v.contentDocumentLink.ContentDocumentId}" description="{!v.contentDocumentLink.ContentDocument.Title}"/>-->
+            
+            <aura:if isTrue="{!and(v.availableQuoteLink != null, !empty(v.availableQuoteLink))}">
+                <a href="{!v.availableQuoteLink}" target="_blank">Available Quote</a>
+                
+                <aura:set attribute="else">
+                    No Available Quote
+                </aura:set>
+            </aura:if>
+        </td>
+        
+        <td>
+            <lightning:input type="file" aura:id="idUploadQuotes" name="file" multiple="true"  onchange="{!c.uploadFiles}"/>
+            <aura:iteration items="{!v.lstFileName}" var="fileName" indexVar="pillIndex">
+                <lightning:pill aura:id="{!pillIndex}" label="{!fileName}" />  <!-- onremove="{!c.removePill}"/>  -->
+            </aura:iteration>
+        </td>
+        <!--   _______________________________________________________________________________________   -->
+        <td>
+            <lightning:input type="file" aura:id="idUploadQuotes2" name="file" multiple="true"  onchange="{!c.uploadFiles2}"/>
+            
+            <aura:iteration items="{!v.lstFileName2}" var="fileName2" indexVar="pillIndex2">
+                <lightning:pill aura:id="{!pillIndex2}" label="{!fileName2}" />   <!--   onremove="{!c.removePill2}"/>  -->
+            </aura:iteration>    
+        </td> 
+        <td>
+            <lightning:input type="file" aura:id="idUploadQuotes3" name="file" multiple="true"  onchange="{!c.uploadFiles3}"/>
+            
+            <aura:iteration items="{!v.lstFileName3}" var="fileName3" indexVar="pillIndex3">
+                <lightning:pill aura:id="{!pillIndex3}" label="{!fileName3}" />   <!--   onremove="{!c.removePill3}"/>  -->
+            </aura:iteration>   
+        </td>
+        <!--   _______________________________________________________________________________________       rows="1"         -->
+        <td>
+        <ui:inputTextArea aura:id="justificationId"   class="slds-input" 
+                          value="{!v.objProcurement.Justification__c}"  disabled = "false" />
+        
+        </td>
+        <!-- _______________________  -->
+      
+        
+        
+        <!--  Conditionally Display Add or Delete Icons, if rowIndex is 0 then show Add New Row Icon else show delete Icon   --> 
+        <td>
+            <aura:if isTrue="{!v.rowIndex == 0}">
+                <a onclick="{!c.AddNewRow}">
+                    <lightning:icon iconName="utility:add" class="slds-icon slds-icon_small" size="small" alternativeText="add"/>
+                    <span class="slds-assistive-text">Add Icon</span>
+                </a>    
+                <aura:set attribute="else">
+                    <a onclick="{!c.AddNewRow}">
+                        <lightning:icon iconName="utility:add" class="slds-icon slds-icon_small" size="small" alternativeText="add"/>
+                        <span class="slds-assistive-text">Add Icon</span>
+                    </a>    
+                    <a onclick="{!c.removeRow}">
+                        <lightning:icon variant="error" iconName="utility:delete" class="slds-icon slds-icon_small" size="small" alternativeText="delete"/>
+                        <span class="slds-assistive-text">Delete Icon</span>
+                    </a>
+                </aura:set> 
+            </aura:if>
+        </td>
+        
+    </tr>
+</aura:component>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+({ 
+    doInit : function(component, event, helper) 
+    {
+        helper.doInit(component, event, helper);
+    },
+    
+    onStateChange: function(component, event, helper) 
+    {
+        helper.onStateChange(component, event, helper);
+    },
+    onDistrictChange: function(component, event, helper) 
+    {     
+        helper.onDistrictChange(component, event, helper);
+    },
+    onCategoryItemsChange: function(component, event, helper) 
+    {     
+        helper.onCategoryItemsChange(component, event, helper);
+    },
+    AddNewRow : function(component, event, helper)
+    {
+        // fire the AddNewRowEvt Lightning Event 
+        component.getEvent("AddRowEvt").fire();     
+    },
+    removeRow : function(component, event, helper)
+    {						// fire the DeleteRowEvt Lightning Event and 
+        //pass the deleted Row Index to Event parameter/attribute
+        component.getEvent("DeleteRowEvt").setParams({"indexVar" : component.get("v.rowIndex") }).fire();
+    },
+    
+    
+    onItemChange:function(component,event,helper)
+    {
+        
+        let selectedState = component.find('stateId').get('v.value');
+        let selectedDistrict = component.find('districtId').get('v.value');
+        let selectedCategory = component.find('categoryItemsId').get('v.value');
+        let selectedItems = component.find('itemsId').get('v.value');
+        
+        if ( selectedItems == 'Others' )
+        {
+            component.find('otherItems').set('v.disabled',false);    // "OTHERS" TextInput can be Edited
+            helper.onItemChange(component,event,helper,selectedState , selectedDistrict, selectedCategory,selectedItems  );
+        }
+        else
+        {
+            component.find('otherItems').set('v.disabled',true);     // "OTHERS" TextInput CANNOT  be Edited
+            
+            helper.onItemChange(component,event,helper,selectedState , selectedDistrict, selectedCategory,selectedItems);  
+        }             
+    },
+    
+    onVendorChange: function(component, event, helper) 
+    {     
+        helper.onVendorChange(component, event, helper);
+    },   
+    uploadFiles : function(component, event, helper)
+    {
+        console.log('---- controller js uploadFiles 1: ' + component.find('idUploadQuotes').get('v.value'));
+        helper.uploadFiles(component, event, helper);
+    },
+    
+    uploadFiles2 : function(component, event, helper)
+    {
+        console.log('---- controller js uploadFiles 1: ' + component.find('idUploadQuotes2').get('v.value'));
+        helper.uploadFiles2(component, event, helper);
+    },
+    
+    uploadFiles3 : function(component, event, helper)
+    {
+        console.log('---- controller js uploadFiles 1: ' + component.find('idUploadQuotes3').get('v.value'));
+        helper.uploadFiles3(component, event, helper);
+    }
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+({
+    doInit : function(component, event, helper)
+    {
+        let getRowIndex = component.get('v.rowIndex');
+        let lstStateDistName = component.get('v.lstStateDistName');
+        lstStateDistName[getRowIndex].index = getRowIndex;
+        
+        component.set('v.lstStateDistName' ,lstStateDistName);
+        
+        console.log('child doInit Called');
+        let mapOfStateDistrict = component.get('v.mapOfStateDistrict');
+        let mapOfCategoryItems  = component.get('v.mapOfCategoryItems');
+        
+
+        let lstOfStates = [], lstOfCategory = [] , key;
+        for(key in mapOfStateDistrict)
+        {
+            lstOfStates.push(key);
+        }
+        
+        for(key in mapOfCategoryItems)
+        {
+            lstOfCategory.push(key);
+        }
+        
+        console.log('\n\n 1. \n\n lstOfStates \n '+lstOfStates);
+        console.log('\n\n 2. \n\n lstOfCategory  \n '+lstOfCategory);
+        
+        component.set("v.lstStates",lstOfStates);
+        component.set("v.lstCategoryItems",lstOfCategory);
+    },
+    
+    onStateChange :  function (component, event, helper) 
+    {
+        console.log('---- Asset_PLI_ChildHelper component.get("v.spinner") in onStateChange 36: ' + component.get('v.spinner'));
+        
+        let selectedState = component.find("stateId").get("v.value");
+        console.log(' ****  selectedState   '+selectedState); 
+        
+        let rowIndex = component.get("v.rowIndex");
+        let lstStateDistName = component.get("v.lstStateDistName");
+        lstStateDistName[rowIndex].index = rowIndex;
+        lstStateDistName[rowIndex].state = selectedState;
+        component.set("v.lstStateDistName",lstStateDistName);
+        let mapOfStateDistrict = component.get('v.mapOfStateDistrict');
+        let key, lstOfDistricts = [];
+        for(key in mapOfStateDistrict)
+        {
+            if(key == selectedState)
+                lstOfDistricts = mapOfStateDistrict[key];
+        }
+        if(lstOfDistricts.length > 0)
+        {
+            component.find("districtId").set("v.disabled", false);
+            component.set("v.lstDistricts", lstOfDistricts);    
+        }
+        else
+        {
+            component.find("districtId").set("v.disabled", true);
+        }
+        console.log('\n\n 4. \n\n lstOfDistricts \n  '+lstOfDistricts);
+    },
+    
+    onDistrictChange: function(component, event, helper) 
+    {     
+        let selectedDistrict = component.find("districtId").get("v.value");
+        console.log(' ******  selectedDistrict   '+ selectedDistrict); 
+        
+        let rowIndex = component.get("v.rowIndex");
+        let lstStateDistName = component.get("v.lstStateDistName");
+        lstStateDistName[rowIndex].index = rowIndex;
+        lstStateDistName[rowIndex].district = selectedDistrict;
+        component.set("v.lstStateDistName",lstStateDistName);
+        
+    },
+    
+    onCategoryItemsChange: function(component, event, helper)
+    { 					
+        let selectedCategoryItem = component.find("categoryItemsId").get("v.value");
+        console.log(' ****  selectedCategoryItems   '+ selectedCategoryItem); 
+        
+        if(selectedCategoryItem == 'IT')
+        {
+            component.find('vendorsId').set("v.disabled",true);
+            component.find('itemSpecification').set("v.disabled",true);
+            component.find('quantity').set("v.disabled",true);
+            component.find('budget').set("v.disabled",true);
+            var toastEvent = $A.get('e.force:showToast');
+            if(toastEvent)
+            {
+                toastEvent.setParams({
+                    "type": 'warning',
+                    "mode" : 'pester',
+                    "duration":' 3000',
+                    "message": 'Please fill Procurement -IT for IT Products !'
+                });
+                toastEvent.fire();
+                window.location.reload();
+            } else{
+                alert('Please fill Procurement -IT for IT Products !');
+            }
+        }
+        else
+        {
+            let rowIndex = component.get("v.rowIndex");
+            let lstStateDistName = component.get("v.lstStateDistName");
+            lstStateDistName[rowIndex].index = rowIndex;
+            lstStateDistName[rowIndex].category = selectedCategoryItem;
+            component.set("v.lstStateDistName",lstStateDistName);
+            console.log(' ** selectedCategoryItem = '+JSON.stringify(lstStateDistName));       
+            console.log('\n\n 5. \n\n   selectedCategoryItem = \n '+selectedCategoryItem); 
+            
+            let mapOfCategoryItems= component.get('v.mapOfCategoryItems');
+            let key , lstOfItems= [];
+            for(key in mapOfCategoryItems )
+            {
+                if (key == selectedCategoryItem) 
+                {
+                    lstOfItems = mapOfCategoryItems[key];
+                }
+            }
+            console.log('\n\n 6. \n\n   lstItems = \n '+lstOfItems);
+            if(lstOfItems.length > 0)
+            {
+                component.find("itemsId").set("v.disabled", false);
+                component.set('v.lstItems',lstOfItems);
+            }
+            else 
+            {
+                component.find("itemsId").set("v.disabled", false);
+            }
+        }   
+    },
+    
+    onItemChange:function(component,event,helper,selectedState , selectedDistrict, selectedCategory,selectedItems )
+    {
+        console.log('Helper onItemChange ');
+        
+        let selectedItem = component.find("itemsId").get("v.value");
+        console.log(' ****  selectedItem   '+ selectedItem); 
+        
+        let rowIndex = component.get("v.rowIndex");
+        let lstStateDistName = component.get("v.lstStateDistName");
+        lstStateDistName[rowIndex].index = rowIndex;
+        lstStateDistName[rowIndex].item = selectedItem;
+        component.set("v.lstStateDistName",lstStateDistName);
+        console.log(' ** selectedItem = '+JSON.stringify(lstStateDistName));       
+        
+        
+        var action = component.get("c.fetchVendors");
+        action.setParams({
+            'state' : selectedState ,
+            'district' : selectedDistrict ,
+            'category' :  selectedCategory,
+            'item' : selectedItems
+        });
+        action.setCallback(this,function(response){
+            let state = response.getState();
+            if(state === "SUCCESS")
+            {
+                console.log('Success State');
+                let result = response.getReturnValue();
+                
+                let lstVendors = result;
+                // let lstVendors = JSON.stringify(result); 
+                console.log('  lstVendors 1 : '+ JSON.stringify(response.getReturnValue())  );
+                console.log('  lstVendors  2 : '+ JSON.stringify(result)  );
+                
+                if(! $A.util.isEmpty(lstVendors) && ! $A.util.isUndefined(lstVendors))
+                {
+                    component.set("v.lstVendors",lstVendors);    
+                }
+                console.log('  lstVendors  3 : '+ lstVendors  );
+                
+            }
+            else if(state == 'INCOMPLETE')
+            {
+                alert('Incomplete');
+            }
+                else if(state == 'ERROR')
+                {
+                    let errors = response.getError();
+                    console.log('errors   '+JSON.stringify(errors));
+                }
+        });
+        
+        $A.enqueueAction(action); 
+        
+    },
+    
+    onVendorChange: function(component, event, helper) 
+    {     
+        console.log('Controller inside onVendorChange ');
+        let selectedVendorId = component.find('vendorsId').get('v.value');
+        
+        let rowIndex = component.get("v.rowIndex");
+        let lstStateDistName = component.get("v.lstStateDistName");
+        lstStateDistName[rowIndex].index = rowIndex;
+        lstStateDistName[rowIndex].vendor = selectedVendorId;
+        component.set("v.lstStateDistName",lstStateDistName);
+        
+        console.log('selectedVendorId  : '+selectedVendorId);
+        if( selectedVendorId != null && selectedVendorId != '' && typeof(selectedVendorId) != undefined  )
+        {
+            //  if(selectedVendorId != null &&  typeof(selectedVendorId) != null )
+            
+            console.log('selectedVendorId  : '+selectedVendorId);
+            let lstVendors = component.get('v.lstVendors');
+            console.log('lstVendors ********* Controller inside onVendorChange  : '+JSON.stringify(lstVendors));
+            
+            let selectedVendorDetails = lstVendors.filter((eachRecord) => {
+                // if(eachRecord.Id == selectedVendorId)
+                if(eachRecord.VendorId == selectedVendorId)
+                return eachRecord;
+            });
+            if(selectedVendorDetails != null && typeof(selectedVendorDetails) != undefined )
+            {
+                console.log('selectedVendorDetails  '+JSON.stringify(selectedVendorDetails));
+                if( selectedVendorDetails[0].GstNo != null && typeof(selectedVendorDetails[0].GstNo) != undefined && selectedVendorDetails[0].GstNo != '' )
+                {
+                    component.find("vendorGstno").set("v.value",selectedVendorDetails[0].GstNo);        
+                    component.find("costPerUnit").set("v.value",selectedVendorDetails[0].PerUnitCost);
+                    component.find("unit").set("v.value",selectedVendorDetails[0].Unit);
+                    
+                    let selectedItemDescriptionId = selectedVendorDetails[0].ItemId;
+                    helper.download_And_PreviewFile(component, event, helper,lstVendors, selectedItemDescriptionId);
+                }
+            }
+            
+        }
+        
+        else if(selectedVendorId == null || selectedVendorId == undefined)
+        {
+            component.find("vendorGstno").set("v.value",null);        
+            component.find("costPerUnit").set("v.value",null);
+            component.find("unit").set("v.value",null);
+            
+        }      
+        
+    },
+    /*   *********************************************************************************************************************
+	*********************************************************************************************************************  */  
+    uploadFiles : function(component, event, helper)
+    {
+        let lstStateDistName = component.get("v.lstStateDistName");
+        
+        var filesName = [];
+        var index = component.get('v.rowIndex');
+        var fileCount = event.getSource().get('v.files').length; 
+        console.log('-- 250 index: ' + index);
+        
+        console.log('---- 252 fileCount: ' + fileCount);
+        
+        if ( fileCount > 0)
+        {
+            var fileLength = event.getSource().get('v.files').length;
+            console.log('---- 257 event.getSource(): fileLength ' + fileLength );
+            for(var i = 0; i < fileLength; i++)
+            {
+                filesName.push(event.getSource().get('v.files')[i]['name']);
+                console.log('---- 261 filesName: ' + filesName);
+                lstStateDistName[index].attach1 = filesName;
+                component.set("v.lstStateDistName",lstStateDistName);
+                console.log(' ---- 264 selectedCategoryItem = '+JSON.stringify(lstStateDistName));       
+            }
+            console.log('--- filesName: ' + filesName);
+        }
+        console.log('---- 268 event.getSource(): fileLength ' + fileLength );
+        
+        component.set('v.lstFileName', filesName);
+        console.log('-- 106 -- component.get("v.lstFileName"): ' + component.get('v.lstFileName'));
+        
+        var fileInput = component.find("idUploadQuotes").get("v.files");
+        console.log('---- fileInput: ' 		  + fileInput);
+        console.log('---- fileInput.length: ' + fileInput.length);
+        component.set('v.UploadedFileList' ,fileInput);
+        
+        //component.set('v.lstFileName', filesName);
+        console.log('-- 279 fileInput.length: ' + fileInput.length);
+        
+        for(var i = 0; i < fileInput.length; i++)
+        {
+            var file = fileInput[i];
+            console.log('---- 284 file: ' + file);
+            var self = this;
+            console.log('---- 286 file.size: ' + file.size);
+            console.log('---- 287 file.length: ' + file.length);
+            if (file.size > 4500000)
+            {
+                // component.set("v.showLoadingSpinner", false);
+                var toastEvent = $A.get("e.force:showToast");
+                toastEvent.setParams({
+                    type: 'alert',
+                    mode : 'pester',
+                    duration : '3000',
+                    "message": 'File size cannot exceed 4500000 bytes  & file size is '+ file.size+ 'bytes',
+                });
+                toastEvent.fire();
+                var filesName = ['Please choose another file'];
+                component.set("v.lstFileName", filesName);
+                return;
+            }
+            //else
+                //component.set("v.lstFileName", filesName);
+            component.getEvent("AddNewFilesEvt").setParams({ 
+                "currentfileName" : file,
+                "IndexNumber" : index
+            }).fire();
+        }
+        console.log('+++++++++++++++++++++++++++   = ' + JSON.stringify(file));
+        
+        
+    },
+    
+    //----------------*******************------------------------************************------------------------**********************
+    
+    uploadFiles2 : function(component, event, helper)
+    {
+        let lstStateDistName = component.get("v.lstStateDistName");
+        var filesName2 = [];
+        var index = component.get('v.rowIndex');
+        console.log('-- index: ' + index);
+        
+        console.log('---- event.getSource(): ' + event.getSource().get('v.files').length);
+        if(event.getSource().get('v.files').length > 0)
+        {
+            var fileLength2 = event.getSource().get('v.files').length;
+            
+            for(var i = 0; i < fileLength2; i++)
+            {
+                filesName2.push(event.getSource().get('v.files')[i]['name']);
+                lstStateDistName[index].attach2 = filesName2;
+                component.set("v.lstStateDistName",lstStateDistName);
+                console.log('gggggggggggggggggggggggggggggggggggg ** selectedCategoryItem = '+JSON.stringify(lstStateDistName)); 
+            }
+            console.log('--- filesName2: ' + filesName2);
+        }
+        
+        component.set('v.lstFileName2', filesName2);
+        console.log('-- 106 -- component.get("v.lstFileName2"): ' + component.get('v.lstFileName2'));
+        
+        var fileInput2 = component.find("idUploadQuotes2").get("v.files");
+        console.log('---- fileInput2: ' + fileInput2);
+        console.log('---- fileInput2.length: ' + fileInput2.length);
+        
+        //component.set('v.lstFileName2', filesName2);
+        
+        for(var i = 0; i < fileInput2.length; i++)
+        {
+            var file2 = fileInput2[i];
+            console.log('---- file2: ' + file2);
+            var self = this;
+            
+            if (file2.size > 4500000) {
+                // component.set("v.showLoadingSpinner", false);
+                var toastEvent = $A.get("e.force:showToast");
+                toastEvent.setParams({
+                    type: 'alert',
+                    mode : 'pester',
+                    duration : '3000',
+                    "message": 'File size cannot exceed 4500000 bytes  & file2 size is '+ file2.size+ 'bytes',
+                });
+                toastEvent.fire();
+                var filesName2 = ['Please choose another file'];
+                component.set("v.lstFileName2", filesName2);
+                return;
+            }
+            component.getEvent("AddNewFilesEvt2").setParams({ 
+                "currentfileName2" : file2 ,
+                "IndexNumber2" : index
+            }).fire();
+        }   
+        
+    },
+    
+    //----------------*******************------------------------************************------------------------**********************
+    
+    uploadFiles3 : function(component, event, helper)
+    {
+        let lstStateDistName = component.get("v.lstStateDistName");
+        var filesName3 = [];
+        var index = component.get('v.rowIndex');
+        console.log('-- index: ' + index);
+        
+        console.log('---- event.getSource(): ' + event.getSource().get('v.files').length);
+        if(event.getSource().get('v.files').length > 0)
+        {
+            var fileLength3 = event.getSource().get('v.files').length;
+            
+            for(var i = 0; i < fileLength3; i++)
+            {
+                filesName3.push(event.getSource().get('v.files')[i]['name']);
+                
+                lstStateDistName[index].attach3 = filesName3;
+                component.set("v.lstStateDistName",lstStateDistName);
+                console.log(' ** selectedCategoryItem = '+JSON.stringify(lstStateDistName)); 
+            }
+            console.log('--- filesName3: ' + filesName3);
+        }
+        
+        component.set('v.lstFileName3', filesName3);
+        console.log('-- 106 -- component.get("v.lstFileName3"): ' + component.get('v.lstFileName3'));
+        
+        var fileInput3 = component.find("idUploadQuotes3").get("v.files");
+        console.log('---- fileInput3: ' + fileInput3);
+        console.log('---- fileInput3.length: ' + fileInput3.length);
+        
+        //component.set('v.lstFileName3', filesName3);
+        
+        for(var i = 0; i < fileInput3.length; i++)
+        {
+            var file3 = fileInput3[i];
+            console.log('---- file3: ' + file3);
+            var self = this;
+            
+            if (file3.size > 4500000) {
+                // component.set("v.showLoadingSpinner", false);
+                var toastEvent = $A.get("e.force:showToast");
+                toastEvent.setParams({
+                    type: 'alert',
+                    mode : 'pester',
+                    duration : '3000',
+                    "message": 'File size cannot exceed 4500000 bytes  & file3 size is '+ file3.size+ 'bytes',
+                });
+                toastEvent.fire();
+                var filesName3 = ['Please choose another file'];
+                component.set("v.lstFileName3", filesName3);
+                return;
+            }
+            component.getEvent("AddNewFilesEvt3").setParams({ 
+                "currentfileName3" : file3 ,
+                "IndexNumber3" : index
+            }).fire();
+        }		 console.log('// Inside All Attachments Here');
+        var a1 = component.get('v.lstFileName');
+        var a2 = component.get('v.lstFileName2'); var a3 = component.get('v.lstFileName3');
+        console.log(' // a1 = '+a1+ '  a2 = '+a2 +'  a3 = '+a3);
+        if(a1 != '' && a2 != '' && a3 != '')
+        {
+            component.find('justificationId').set('v.disabled', true);
+            console.log(' // Disabling the Justification Text Box');
+        //    helper.countAttachments(component,event,helper);
+        }
+    },
+    
+    /*   *********************************************************************************************************************
+	*********************************************************************************************************************  */  
+    
+    download_And_PreviewFile:function(component,event,helper,lstVendors, selectedItemDescriptionId )
+    {  
+        let getQuoteUrlAction = component.get("c.getQuoteAttachment");
+        
+        if(!$A.util.isEmpty(getQuoteUrlAction) && !$A.util.isUndefined(getQuoteUrlAction) )
+        { 
+            getQuoteUrlAction.setParams({
+                'selectedItemDescriptionId' : selectedItemDescriptionId
+            });
+            getQuoteUrlAction.setCallback(this, (response) => {
+                let state = response.getState();
+                if(state == 'SUCCESS')
+                {
+                let lstItemDescription =  response.getReturnValue();
+                console.log('lstItemDescription  : '+JSON.stringify(lstItemDescription));
+                if(typeof(lstItemDescription) != 'undefined' && (lstItemDescription != null && lstItemDescription != ''))
+                {
+                //component.set('v.contentDocumentLink', lstItemDescription[0].ContentDocumentLinks[0]);
+                component.set('v.availableQuoteLink', lstItemDescription[0].Public_Quote_URL__c);
+            }
+                                          } 
+                else if(state == 'INCOMPLETE')
+            {
+            }
+            else if(state == 'ERROR')
+            {
+            }
+        });
+        $A.enqueueAction(getQuoteUrlAction);  
+    }  
+},
+
+
+
+ countAttachments: function(component, event, helper)
+    {
+        var lstOfFile  = component.get("v.ListFileData");
+        var lstOfFile2 = component.get("v.ListFileData2");
+        var lstOfFile3 = component.get("v.ListFileData3");
+        
+        
+        var len1 = lstOfFile.length ;
+        var len2 = lstOfFile2.length ;
+        var len3 = lstOfFile3.length ;
+        
+        console.log( 'countAtt 125 ***** Lengths of All 3 files are ==  ****** ==  '+len1 +' == '+ len2+' == '+len3);
+        var countAtt = (len1 + len2 + len3) ;
+        
+        if (countAtt == 3)
+        {
+            console.log('Child Quotes ****** 125 ****** countAtt = '+ countAtt  );
+        }
+        else if (countAtt == 2)
+        {
+            console.log('Child Quotes ***** 125 ****** countAtt = '+ countAtt  );
+        }
+        else if (countAtt == 1)
+        {
+            console.log(' Child Quotes ***** 125 ****** countAtt = '+ countAtt  );
+        }
+        else if (countAtt == 0) 
+        {
+         countAtt = countAtt + 0.1;
+         console.log('Child********* 125 ****** countAtt = '+ countAtt  );
+        }
+        component.set('v.countAtt', countAtt);
+        console.log('Child Quotes ---- component.set("v.countAtt"): ' + component.set('v.countAtt'));
+        component.find('quotes').set('v.value',countAtt) ;
+    //    helper.uploadNoOfQuotes(component,controller,helper);
+        return countAtt;
+    }
+     
+ })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.THIS .slds-form-element {
+    position: relative;
+    min-width: 0;
+    padding-bottom: 18px;
+}
+
+.THIS .forceContentFileCard {
+    width: 7rem !important;
+}
