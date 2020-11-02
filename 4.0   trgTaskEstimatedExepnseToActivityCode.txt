@@ -1,0 +1,29 @@
+/* All Tasks are associated with Activity Code.
+  Fetching all tasks associated with a particular ActivityCode and doing the sum of Exstimated Expense of All tasks associated with 
+that Activity Code and substituing the calculated sum to the Estimated Expense of Activity Code.
+*/
+
+
+trigger trgTaskEstimatedExepnseToActivityCode on Milestone1_Task__c(after insert,after Update,after delete,after Undelete) 
+{
+    
+    if((trigger.isInsert || trigger.isDelete || trigger.isUndelete) && trigger.isAfter )
+    {
+        Trigger_Enabled_Three__c objCS1 = Trigger_Enabled_Three__c.getInstance('trgTask_afterInsDelUndel');
+        
+        if(objCS1 == null || objCS1.Not_Active__c == false)
+        {
+            List<Milestone1_Task__c> lstTask = trigger.isDelete ? trigger.old : trigger.new;
+            trgTaskEstimatedExpenseHandler.afterInsDelUndel(lstTask);
+        }
+    }
+    
+    if(trigger.isAfter && trigger.isUpdate)
+    {
+        Trigger_Enabled_Three__c objCS2 = Trigger_Enabled_Three__c.getInstance('trgTask_afterUpdate');
+        
+        if(objCS2 == null || objCS2.Not_Active__c == false)
+            trgTaskEstimatedExpenseHandler.afterUpdate(trigger.newMap,trigger.oldMap);
+    }    
+    
+}

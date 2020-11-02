@@ -1,0 +1,118 @@
+public class trgTaskEstimatedExpenseHandler 
+{
+   public static void afterInsDelUndel(List<Milestone1_Task__c> newList)
+      {
+          
+          Set<String> setOfActivityCodeIds = new Set<String>();
+          List<AggregateResult> lstOfAggregateResult = new List<AggregateResult>();
+           
+          for(Milestone1_Task__c eachTask : newList)
+          {
+              if(eachTask.Activity_Codes__c != null)
+              {
+                  setOfActivityCodeIds.add(eachTask.Activity_Codes__c);
+              }
+          }
+          if( setOfActivityCodeIds != null && setOfActivityCodeIds.size() > 0 )
+          {
+              aggregateSum(setOfActivityCodeIds);
+          }
+      }
+ 
+    public static void  aggregateSum(Set<String> setOfActivityCodeIds)
+    {
+        List<Activity_Code__c> lstOfActivityCode = new  List<Activity_Code__c>();
+        
+        Map<String, Decimal> mapOfActivityCodeIdToEstExpense = new Map<String, Decimal>();
+        Map<String, Decimal> mapOfActivityCodeIdToEstdExpenditure = new Map<String, Decimal>();   //  ************
+        Map<String, Decimal> mapOfTaskActualHoursToActivityCodeActualHours = new Map<String, Decimal>();
+        
+        List<AggregateResult> lstTaskAgg = [ SELECT Activity_Codes__c ,Sum(Estimated_Expense__c) ee ,
+                                            Sum(Grant_Utilization_On_Pro_Rate_Basis__c) pp, Sum(Total_Hours__c) hh     //  ************
+                                             FROM  Milestone1_Task__c
+                                             WHERE Activity_Codes__c = : setOfActivityCodeIds GROUP BY Activity_Codes__c ]; 
+        System.debug(' lstTaskAgg = ' + lstTaskAgg );
+    
+        for ( AggregateResult agg : lstTaskAgg)
+        {
+            mapOfActivityCodeIdToEstExpense.put( (String)agg.get('Activity_Codes__c'), (Decimal)agg.get('ee'));
+            mapOfActivityCodeIdToEstdExpenditure.put( (String)agg.get('Activity_Codes__c'), (Decimal)agg.get('pp'));  //  ************
+             mapOfTaskActualHoursToActivityCodeActualHours.put( (String)agg.get('Activity_Codes__c'), (Decimal)agg.get('hh'));
+        }
+        System.debug( '555 ********   mapOfActivityCodeIdToEstExpense = '+ mapOfActivityCodeIdToEstExpense);
+        System.debug( '555 ********   mapOfActivityCodeIdToEstdExpenditure = '+ mapOfActivityCodeIdToEstdExpenditure);
+        System.debug( '555 ********   mapOfTaskActualHoursToActivityCodeActualHours = '+ mapOfTaskActualHoursToActivityCodeActualHours);
+        System.debug( '555 ********   mapOfTaskActualHoursToActivityCodeActualHours.get -- = '+ mapOfTaskActualHoursToActivityCodeActualHours.get('Activity_Codes__c'));
+         if(mapOfTaskActualHoursToActivityCodeActualHours.get('Activity_Codes__c') != null )
+         {
+        for(String eachId : mapOfActivityCodeIdToEstExpense.keySet())
+        {
+           
+            Activity_Code__c objActivity = new Activity_Code__c();
+            objActivity.Id = eachId ;
+            objActivity.Estimated_Expense_from_Tasks__c = mapOfActivityCodeIdToEstExpense.get(eachId);
+            objActivity.Estimated_expenditure_till_current_date__c = mapOfActivityCodeIdToEstdExpenditure.get(eachId);//  ************
+            objActivity.Actual_Hours_from_tasks__c =  mapOfTaskActualHoursToActivityCodeActualHours.get(eachId);
+            lstOfActivityCode.add(objActivity);
+            
+            System.debug('   555    ========= objActivity.Id = '+objActivity.Id);
+            System.debug('   555    ========= objActivity.Estimated_Expense_from_Tasks__c = '+objActivity.Estimated_Expense_from_Tasks__c);
+            System.debug('   555    ========= objActivity.Actual_Hours_from_tasks__c = '+objActivity.Actual_Hours_from_tasks__c);
+            }
+         }
+            System.debug('   555    ========= lstOfActivityCode  = '+ lstOfActivityCode);
+         if( lstOfActivityCode != null && lstOfActivityCode.size() > 0 )
+          {
+            	  update lstOfActivityCode;	
+          }
+     }
+	    
+	  
+    public static void afterUpdate(Map<Id,Milestone1_Task__c> newMap,Map<Id,Milestone1_Task__c> oldMap )
+    {
+        System.debug(' 555    ========= OLD MAP Testing ----'+oldMap);
+        System.debug(' 555    ========= NEW MAP Doing Testing ----'+newMap);
+        Set<String> setOfTaskId = new Set<String>();
+        
+        for(Milestone1_Task__c eachPetty : newMap.values())         
+        { 
+            System.debug(' 555    ========= eachPetty.Activity_Codes__c ----'+eachPetty.Activity_Codes__c);
+            System.debug(' 555    ========= eachPetty.Estimated_Expense__c ----'+eachPetty.Estimated_Expense__c);
+            System.debug(' 555    ========= eachPetty.Grant_Utilization_On_Pro_Rate_Basis__c ----'+eachPetty.Grant_Utilization_On_Pro_Rate_Basis__c);
+            System.debug(' 555    ========= eachPetty.Total_Hours__c ----'+eachPetty.Total_Hours__c);
+         if(eachPetty.Activity_Codes__c != oldMap.get(eachPetty.Id).Activity_Codes__c)
+                {
+                    setOfTaskId.add(eachPetty.Activity_Codes__c);
+                    setOfTaskId.add(oldMap.get(eachPetty.Id).Activity_Codes__c);
+                }
+                if(eachPetty.Estimated_Expense__c != oldMap.get(eachPetty.Id).Estimated_Expense__c)
+                {
+                    setOfTaskId.add(eachPetty.Activity_Codes__c);
+                }
+            
+            if(eachPetty.Grant_Utilization_On_Pro_Rate_Basis__c != oldMap.get(eachPetty.Id).Grant_Utilization_On_Pro_Rate_Basis__c)
+                {
+                    setOfTaskId.add(eachPetty.Activity_Codes__c);
+                }
+            if(eachPetty.Total_Hours__c != oldMap.get(eachPetty.Id).Total_Hours__c)
+                {
+                    setOfTaskId.add(eachPetty.Activity_Codes__c);
+                }
+            //------------------------------------------------------------------------------------------------------
+            
+                if((eachPetty.Estimated_Expense__c != oldMap.get(eachPetty.Id).Estimated_Expense__c) && 
+                      (eachPetty.Grant_Utilization_On_Pro_Rate_Basis__c != oldMap.get(eachPetty.Id).Grant_Utilization_On_Pro_Rate_Basis__c) &&
+                         (eachPetty.Total_Hours__c != oldMap.get(eachPetty.Id).Total_Hours__c)  &&
+                   			(eachPetty.Activity_Codes__c != oldMap.get(eachPetty.Id).Activity_Codes__c) )
+                {
+                    setOfTaskId.add(eachPetty.Activity_Codes__c);
+                    setOfTaskId.add(oldMap.get(eachPetty.Id).Activity_Codes__c);
+                }
+        }    
+        if(setOfTaskId != null && setOfTaskId.size() > 0)
+        {
+            aggregateSum(setOfTaskId);
+        }
+    }	
+    
+}

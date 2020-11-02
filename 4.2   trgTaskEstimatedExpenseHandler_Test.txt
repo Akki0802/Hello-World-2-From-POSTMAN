@@ -1,0 +1,107 @@
+/*------------------------------------------------------------------------
+CreatedBy:   	  Ankit Gupta
+Modified By:      Ankit Gupta
+Modified Date :   23/September/2020
+Apex Class :      trgTaskEstimatedExpenseHandler
+------------------------------------------------------------------------- */
+
+@isTest
+public class trgTaskEstimatedExpenseHandler_Test 
+{
+    static testmethod void UnitTest1()             
+    {
+        Trigger_Enabled_Three__c objCS1 = new Trigger_Enabled_Three__c();
+        objCS1.Name = 'Trigger CS 3';
+        objCS1.Not_Active__c = false;
+        insert objCS1 ;
+        
+        Set<String> lstOfActivityCodeIds = new Set<String>(); 
+        List<Milestone1_Task__c> taskList = new List<Milestone1_Task__c>();
+        
+        Map<id,Milestone1_Task__c> oldMap = new Map<id,Milestone1_Task__c>();
+        Map<id,Milestone1_Task__c> newMap = new Map<id,Milestone1_Task__c>();
+        Map<String, Decimal> mapOfTaskActualHoursToActivityCodeActualHours = new Map<String, Decimal>();
+        
+        Date date1 = Date.today();
+        Milestone1_Project__c objProject = MasterTestUtility.createProject('Test project',date1 , date1,'External Project' );
+        insert objProject;
+        System.assertNotEquals(null, objProject.Id);
+        System.debug('111 ===== objProject = '+objProject);
+        
+        
+        Test.startTest(); 
+        
+        Activity_Code__c objActivityCode1 = MasterTestUtility.createActivityCode('ac/ac12/amazon', objProject );
+        insert objActivityCode1;
+        System.assertNotEquals(null, objActivityCode1.Id);
+        
+        lstOfActivityCodeIds.add(objActivityCode1.Id);  
+        System.debug('111 ===== objActivityCode1 = '+objActivityCode1);
+        
+        
+        Activity_Code__c objActivityCode2 = MasterTestUtility.createActivityCode('ac/ac12/flipkart', objProject );
+        insert objActivityCode2;
+        System.assertNotEquals(null, objActivityCode2.Id);
+        
+        lstOfActivityCodeIds.add(objActivityCode2.Id); 
+        System.debug('111 ===== objActivityCode2 = '+objActivityCode2);
+        
+       System.debug('111 ===== mapOfTaskActualHoursToActivityCodeActualHours ==  '+mapOfTaskActualHoursToActivityCodeActualHours);
+        
+        Activity_Code__c objActivityCode3 = MasterTestUtility.createActivityCode('ac/ac12/myntra', objProject );
+        insert objActivityCode3;
+        System.assertNotEquals(null, objActivityCode3.Id);
+        
+        lstOfActivityCodeIds.add(objActivityCode3.Id); 
+        System.debug('111 ===== objActivityCode3 = '+objActivityCode3);
+        
+     
+        Milestone1_Milestone__c objTaskCategory = MasterTestUtility.createProjectTaskCategory('Catregory1', objProject);
+        insert objTaskCategory;
+        System.debug('111 ===== objTaskCategory = '+objTaskCategory);
+        
+        Milestone1_Task__c task = MasterTestUtility.getTask(objTaskCategory, 'Hello Task 1');
+        task.Project_Milestone__c = objTaskCategory.Id;
+        task.Project_Name__c = objProject.Id;
+        insert task;
+        taskList.add(task);
+        
+        Milestone1_Task__c task1 = MasterTestUtility.getTask(objTaskCategory, 'Task 1');
+        task1.Project_Milestone__c = objTaskCategory.Id;
+        task1.Project_Name__c = objProject.Id;
+        task1.Estimated_Expense__c = 120;
+        task1.Activity_Codes__c = objActivityCode1.Id ;
+        insert task1;
+        
+        Milestone1_Time__c timesheet = MasterTestUtility.getTimesheet(task, objProject);
+        timesheet.Project_Task__c = task1.Id;
+        timesheet.Projecttimesheet__c = objProject.id;
+        timesheet.Hours__c = 2.99;
+        insert timesheet;
+        
+        // Creating OLD MAP DATA
+        oldMap.put(task.Id,task);
+        System.debug('111 =====  TEST CLASS ka oldMap = '+oldMap ); 
+        task.Estimated_Expense__c = 600;
+        task.Activity_Codes__c = objActivityCode3.Id ; 
+        //task.Pro_Rate_Analysis__c = 1000;
+        task.Start_Date__c = Date.today();
+        task.Due_Date__c = Date.today();	//.addDays(-1);
+        task.Grant_Utilization_Date__c = Date.today();
+        task.Actual_Start_Date__c = Date.today().addDays(-2);
+        update task;
+        
+        // Creating NEW MAP DATA
+        newMap.put(task.Id,task);
+        System.debug('111 =====  TEST CLASS ka newMap = '+newMap );
+        Set<String> setOfTaskId = new Set<String>();
+        
+        mapOfTaskActualHoursToActivityCodeActualHours.put(objActivityCode3.Id, 4.45);
+        mapOfTaskActualHoursToActivityCodeActualHours.put(objActivityCode3.Id, 4.45);
+        
+        System.debug('111 ===== mapOfTaskActualHoursToActivityCodeActualHours ==  '+mapOfTaskActualHoursToActivityCodeActualHours);
+        // trgTaskEstimatedExpenseHandler.aggregateSum(lstOfActivityCodeIds);
+        Test.stopTest(); 
+        
+    }
+}
